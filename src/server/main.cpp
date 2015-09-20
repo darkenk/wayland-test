@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include "../utils/logger.hpp"
+#include "x11backend.hpp"
+#include <unistd.h>
 
 using namespace std;
 
@@ -47,7 +49,7 @@ public:
         mInterface.destroy = WaylandSurface::surfaceDestroy;
         mInterface.attach = WaylandSurface::hookSurfaceAttach;
         mInterface.damage = WaylandSurface::surfaceDamage;
-        mInterface.frame = WaylandSurface::surfaceFrame;
+        mInterface.frame = WaylandSurface::hookSurfaceFrame;
         mInterface.set_opaque_region = WaylandSurface::surfaceSetOpaqueRegion;
         mInterface.set_input_region = WaylandSurface::surfaceSetInputRegion;
         mInterface.commit = WaylandSurface::hookSurfaceCommit;
@@ -61,25 +63,39 @@ public:
             return;
         }
         wl_resource_set_implementation(mResource, &mInterface, this, nullptr);
+        // TODO: dumb hardcoding!
+        mOutput = new X11Backend(480, 360);
     }
 
     void surfaceCommit(wl_client* client, wl_resource* resource) {
-        wl_shm_buffer* b = wl_shm_buffer_get(mBuffer);
-        uint32_t* color = (uint32_t*)wl_shm_buffer_get_data(b);
-        LOGVP("Color %d", *color);
+        wl_shm_buffer* buf = wl_shm_buffer_get(mBuffer);
+        uint32_t* color = (uint32_t*)wl_shm_buffer_get_data(buf);
+        mOutput->drawBuffer(color);
+        wl_resource_queue_event(mBuffer, WL_BUFFER_RELEASE);
+        wl_callback_send_done(mCallbackDone, 0 /*dumb timestamp*/);
     }
 
     void surfaceAttach(wl_client* client, wl_resource* resource, wl_resource* buffer,
                        int32_t sx, int32_t sy) {
         mBuffer = buffer;
+        wl_shm_buffer* buf = wl_shm_buffer_get(buffer);
+        mHeight = wl_shm_buffer_get_height(buf);
+        mWidth = wl_shm_buffer_get_width(buf);
+        mOutput->setSize(mWidth, mHeight);
+    }
+
+    void surfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
+        mCallbackDone = wl_resource_create(client, &wl_callback_interface, 1, callback);
     }
 
 private:
     struct wl_surface_interface mInterface;
     wl_resource* mResource;
     wl_resource* mBuffer;
+    wl_resource* mCallbackDone;
     int32_t mWidth;
     int32_t mHeight;
+    X11Backend* mOutput;
 
     static void surfaceDestroy(wl_client* client, wl_resource* resource) {
         LOGVP();
@@ -97,8 +113,9 @@ private:
         LOGVP();
     }
 
-    static void surfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
+    static void hookSurfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
         LOGVP();
+        getSurface(resource)->surfaceFrame(client, resource, callback);
     }
 
     static void surfaceSetOpaqueRegion(wl_client* client, wl_resource* resource,
