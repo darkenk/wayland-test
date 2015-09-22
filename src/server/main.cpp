@@ -6,6 +6,8 @@
 #include "../utils/logger.hpp"
 #include "x11backend.hpp"
 #include <unistd.h>
+#include <memory>
+#include "../utils/make_unique.hpp"
 
 using namespace std;
 
@@ -69,19 +71,23 @@ public:
 
     void surfaceCommit(wl_client* client, wl_resource* resource) {
         wl_shm_buffer* buf = wl_shm_buffer_get(mBuffer);
+        wl_shm_buffer_begin_access(buf);
         uint32_t* color = (uint32_t*)wl_shm_buffer_get_data(buf);
         mOutput->drawBuffer(color);
         wl_resource_queue_event(mBuffer, WL_BUFFER_RELEASE);
         wl_callback_send_done(mCallbackDone, 0 /*dumb timestamp*/);
+        wl_shm_buffer_end_access(buf);
     }
 
     void surfaceAttach(wl_client* client, wl_resource* resource, wl_resource* buffer,
                        int32_t sx, int32_t sy) {
         mBuffer = buffer;
         wl_shm_buffer* buf = wl_shm_buffer_get(buffer);
+        wl_shm_buffer_begin_access(buf);
         mHeight = wl_shm_buffer_get_height(buf);
         mWidth = wl_shm_buffer_get_width(buf);
         mOutput->setSize(mWidth, mHeight);
+        wl_shm_buffer_end_access(buf);
     }
 
     void surfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
@@ -146,54 +152,38 @@ private:
     }
 };
 
-class WaylandShell
-{
-public:
-    WaylandShell() {
-        mInterface.get_shell_surface = WaylandShell::getShellSurface;
-    }
-
-    struct wl_shell_interface& getInterface() {
-        return mInterface;
-    }
-
-private:
-    struct wl_shell_interface mInterface;
-
-    static void getShellSurface(wl_client *client, wl_resource *resource, uint32_t id,
-                                wl_resource *surface_resource) {
-        LOGVP();
-    }
-};
-
 class WaylandCompositor
 {
 public:
     WaylandCompositor() {
         mInterface.create_surface = WaylandCompositor::hookCreateSurface;
         mInterface.create_region = WaylandCompositor::hookCreateRegion;
-
     }
 
     struct wl_compositor_interface& getInterface() {
         return mInterface;
     }
 
-    WaylandShell& getShell() {
-        return mShell;
+    void createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
+        if (mSurface) {
+            LOGVE("Only one surface is currently supported");
+            return;
+        }
+        mSurface = make_unique<WaylandSurface>(client, resource, id);
     }
 
-    WaylandSurface* createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
-        return new WaylandSurface(client, resource, id);
-    }
-
-    WaylandRegion* createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
-        return new WaylandRegion(client, resource, id);
+    void createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
+        if (mRegion) {
+            LOGVE("Only one region is currently supported");
+            return;
+        }
+        mRegion = make_unique<WaylandRegion>(client, resource, id);
     }
 
 private:
     struct wl_compositor_interface mInterface;
-    WaylandShell mShell;
+    unique_ptr<WaylandSurface> mSurface;
+    unique_ptr<WaylandRegion> mRegion;
 
     static void hookCreateSurface(wl_client* client, wl_resource* resource, uint32_t id) {
         LOGVP();
@@ -222,16 +212,11 @@ public:
         mLoop = wl_display_get_event_loop(mDisplay);
         const char* socketName = wl_display_add_socket_auto(mDisplay);
         LOGVP("Socket Name %s", socketName);
-        if (not wl_global_create(mDisplay, &wl_compositor_interface, 3, &mCompositor,
-                                 WaylandServer::bindCompositor)) {
+        mWlCompositor = wl_global_create(mDisplay, &wl_compositor_interface, 3, &mCompositor,
+                                         WaylandServer::bindCompositor);
+        if (not mWlCompositor) {
             throw exception();
         }
-
-        if (not wl_global_create(mDisplay, &wl_shell_interface, 1, &mCompositor.getShell(),
-                                 WaylandServer::bindShell)) {
-            throw exception();
-        }
-
         wl_display_init_shm(mDisplay);
     }
 
@@ -239,6 +224,8 @@ public:
         wl_display_terminate(mDisplay);
         wl_display_destroy(mDisplay);
         mDisplay = nullptr;
+        wl_global_destroy(mWlCompositor);
+        mWlCompositor = nullptr;
     }
 
     void run() {
@@ -248,12 +235,8 @@ public:
 private:
     wl_display* mDisplay;
     wl_event_loop* mLoop;
+    wl_global* mWlCompositor;
     WaylandCompositor mCompositor;
-
-    static int idleHandle(void* data) {
-        LOGVP();
-        return 1;
-    }
 
     static void bindCompositor(wl_client* client, void* data, uint32_t version, uint32_t id) {
         LOGVP();
