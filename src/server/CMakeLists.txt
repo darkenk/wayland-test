@@ -1,10 +1,8 @@
 project(wayland_server_test)
 aux_source_directory(. SRC)
 
-find_package(Wayland COMPONENTS Server Egl REQUIRED)
-if (NOT X11_FOUND)
-    find_package(X11 REQUIRED)
-endif()
+find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
+find_package(X11 REQUIRED)
 
 include_directories(
     ${Wayland_INCLUDE_DIRS}
@@ -17,7 +15,5 @@ target_link_libraries(${PROJECT_NAME}
     ${Wayland_LIBRARIES}
     dk_utils
     ${X11_LIBRARIES}
-#    EGL
-#    GLESv2
 )
 
