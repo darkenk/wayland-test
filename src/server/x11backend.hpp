@@ -2,9 +2,11 @@
 #define X11BACKEND_HPP
 
 #include <X11/Xlib.h>
+#include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
 #include "../utils/exceptions.hpp"
 #include "../utils/logger.hpp"
+#include "wayland-server.h"
 
 class X11Backend
 {
@@ -51,6 +53,20 @@ public:
         mImage->data = nullptr;
     }
 
+    void addToLoop(wl_event_loop* loop) {
+        mXcbConnection = XGetXCBConnection(mDisplay);
+        XSetEventQueueOwner(mDisplay, XCBOwnsEventQueue);
+        mXcbSource = wl_event_loop_add_fd(loop, xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
+                             X11Backend::hookHandleX11Events, this);
+        wl_event_source_check(mXcbSource);
+    }
+
+    int handleX11Events() {
+        xcb_generic_event_t* event = xcb_poll_for_event(mXcbConnection);
+        //LOGVP("handle %d", event->response_type);
+        return 0;
+    }
+
 private:
     static constexpr int sDepth = 24;
     Pixmap mPixmap;
@@ -61,7 +77,13 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
     XImage* mImage;
+    wl_event_source* mXcbSource;
+    xcb_connection_t* mXcbConnection;
 
+    static int hookHandleX11Events(int fd, uint32_t mask, void* data) {
+        LOGVP();
+        return reinterpret_cast<X11Backend*>(data)->handleX11Events();
+    }
 };
 
 #endif // X11BACKEND_HPP

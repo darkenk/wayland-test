@@ -15,5 +15,6 @@ target_link_libraries(${PROJECT_NAME}
     ${Wayland_LIBRARIES}
     dk_utils
     ${X11_LIBRARIES}
+    xcb
+    X11-xcb
 )
-

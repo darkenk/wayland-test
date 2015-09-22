@@ -218,6 +218,8 @@ public:
             throw exception();
         }
         wl_display_init_shm(mDisplay);
+        mOutput = new X11Backend(480, 360);
+        mOutput->addToLoop(wl_display_get_event_loop(mDisplay));
     }
 
     ~WaylandServer() {
@@ -237,6 +239,7 @@ private:
     wl_event_loop* mLoop;
     wl_global* mWlCompositor;
     WaylandCompositor mCompositor;
+    X11Backend* mOutput;
 
     static void bindCompositor(wl_client* client, void* data, uint32_t version, uint32_t id) {
         LOGVP();
