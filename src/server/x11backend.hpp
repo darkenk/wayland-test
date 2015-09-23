@@ -20,6 +20,8 @@ public:
         }
         mRoot = DefaultRootWindow(mDisplay);
         mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
+        WM_DELETE_WINDOW = XInternAtom(mDisplay, "WM_DELETE_WINDOW", False);
+        XSetWMProtocols(mDisplay, mWindow, &WM_DELETE_WINDOW, 1);
         XMapWindow(mDisplay, mWindow);
         XFlush(mDisplay);
         mPixmap = XCreatePixmap(mDisplay, mWindow, mWidth, mHeight, sDepth);
@@ -55,7 +57,6 @@ public:
 
     void addToLoop(wl_event_loop* loop) {
         mXcbConnection = XGetXCBConnection(mDisplay);
-        XSetEventQueueOwner(mDisplay, XCBOwnsEventQueue);
         mXcbSource = wl_event_loop_add_fd(loop, xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
                              X11Backend::hookHandleX11Events, this);
         wl_event_source_check(mXcbSource);
@@ -63,8 +64,21 @@ public:
 
     int handleX11Events() {
         xcb_generic_event_t* event = xcb_poll_for_event(mXcbConnection);
-        //LOGVP("handle %d", event->response_type);
-        return 0;
+        if (not event) {
+            return 0;
+        }
+        switch(event->response_type & ~0x80) {
+        case XCB_CLIENT_MESSAGE:
+            if (((xcb_client_message_event_t*) event)->data.data32[0] == WM_DELETE_WINDOW) {
+                LOGVP("Destroy me");
+                abort();
+            }
+            break;
+        default:
+            LOGVP("Not handled %d", event->response_type & ~0x80);
+            break;
+        }
+        return 1;
     }
 
 private:
@@ -79,6 +93,7 @@ private:
     XImage* mImage;
     wl_event_source* mXcbSource;
     xcb_connection_t* mXcbConnection;
+    Atom WM_DELETE_WINDOW;
 
     static int hookHandleX11Events(int fd, uint32_t mask, void* data) {
         LOGVP();
