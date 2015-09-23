@@ -23,7 +23,6 @@ public:
         wl_resource_set_implementation(mResource, &mInterface, this, nullptr);
     }
 
-
 private:
     struct wl_region_interface mInterface;
     wl_resource* mResource;
@@ -175,6 +174,10 @@ public:
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
     }
 
+    ~WaylandCompositor() {
+        free(mRepaintTimer);
+    }
+
     struct wl_compositor_interface& getInterface() {
         return mInterface;
     }
@@ -260,8 +263,8 @@ private:
     void clientDisconnects(wl_client* client) {
         LOGVP();
         mClient = nullptr;
-        mSurface.release();
-        mRegion.release();
+        mSurface.reset();
+        mRegion.reset();
     }
 };
 
