@@ -212,22 +212,21 @@ public:
         mLoop = wl_display_get_event_loop(mDisplay);
         const char* socketName = wl_display_add_socket_auto(mDisplay);
         LOGVP("Socket Name %s", socketName);
-        mWlCompositor = wl_global_create(mDisplay, &wl_compositor_interface, 3, &mCompositor,
-                                         WaylandServer::bindCompositor);
-        if (not mWlCompositor) {
+        if (not wl_global_create(mDisplay, &wl_compositor_interface, 3, &mCompositor,
+                                 WaylandServer::bindCompositor)) {
             throw exception();
         }
         wl_display_init_shm(mDisplay);
         mOutput = new X11Backend(480, 360);
-        mOutput->addToLoop(wl_display_get_event_loop(mDisplay));
+        mOutput->setWaylandDisplay(mDisplay);
     }
 
     ~WaylandServer() {
         wl_display_terminate(mDisplay);
         wl_display_destroy(mDisplay);
         mDisplay = nullptr;
-        wl_global_destroy(mWlCompositor);
-        mWlCompositor = nullptr;
+        delete mOutput;
+        mOutput = nullptr;
     }
 
     void run() {

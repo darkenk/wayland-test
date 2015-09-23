@@ -24,6 +24,7 @@ public:
         XSetWMProtocols(mDisplay, mWindow, &WM_DELETE_WINDOW, 1);
         XMapWindow(mDisplay, mWindow);
         XFlush(mDisplay);
+        mXcbConnection = XGetXCBConnection(mDisplay);
         mPixmap = XCreatePixmap(mDisplay, mWindow, mWidth, mHeight, sDepth);
         XGCValues gcvalues;
         mGraphicContext = XCreateGC(mDisplay, mPixmap, 0, &gcvalues);
@@ -32,6 +33,14 @@ public:
         if (not mImage) {
             throw Exception("Can't create XImage");
         }
+    }
+
+    ~X11Backend() {
+        XDestroyImage(mImage);
+        mImage = nullptr;
+        XFreeGC(mDisplay, mGraphicContext);
+        XCloseDisplay(mDisplay);
+        mDisplay = nullptr;
     }
 
     Display* getDisplay() { return mDisplay; }
@@ -55,9 +64,9 @@ public:
         mImage->data = nullptr;
     }
 
-    void addToLoop(wl_event_loop* loop) {
-        mXcbConnection = XGetXCBConnection(mDisplay);
-        mXcbSource = wl_event_loop_add_fd(loop, xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
+    void setWaylandDisplay(wl_display* display) {
+        mWlDisplay = display;
+        mXcbSource = wl_event_loop_add_fd(wl_display_get_event_loop(display), xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
                              X11Backend::hookHandleX11Events, this);
         wl_event_source_check(mXcbSource);
     }
@@ -71,13 +80,17 @@ public:
         case XCB_CLIENT_MESSAGE:
             if (((xcb_client_message_event_t*) event)->data.data32[0] == WM_DELETE_WINDOW) {
                 LOGVP("Destroy me");
-                abort();
+                wl_event_source_remove(mXcbSource);
+                XDestroyWindow(mDisplay, mWindow);
+                XFlush(mDisplay);
+                wl_display_terminate(mWlDisplay);
             }
             break;
         default:
             LOGVP("Not handled %d", event->response_type & ~0x80);
             break;
         }
+        free(event);
         return 1;
     }
 
@@ -94,9 +107,9 @@ private:
     wl_event_source* mXcbSource;
     xcb_connection_t* mXcbConnection;
     Atom WM_DELETE_WINDOW;
+    wl_display* mWlDisplay;
 
     static int hookHandleX11Events(int fd, uint32_t mask, void* data) {
-        LOGVP();
         return reinterpret_cast<X11Backend*>(data)->handleX11Events();
     }
 };
