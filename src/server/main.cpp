@@ -165,16 +165,14 @@ private:
 class WaylandCompositor
 {
 public:
-    WaylandCompositor(wl_display* display, X11Backend* output) {
+    WaylandCompositor(wl_display* display, X11Backend* output) : mClient(nullptr) {
         mInterface.create_surface = WaylandCompositor::hookCreateSurface;
         mInterface.create_region = WaylandCompositor::hookCreateRegion;
-
+        mOutput = output;
         // repaint handler
         wl_event_loop* loop = wl_display_get_event_loop(display);
         mRepaintTimer = wl_event_loop_add_timer(loop, WaylandCompositor::hookRepaintHandler, this);
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
-
-        mOutput = output;
     }
 
     struct wl_compositor_interface& getInterface() {
@@ -198,13 +196,31 @@ public:
     }
 
     int repaint() {
-        LOGVP();
+        //LOGVP();
         if (mSurface && mSurface->isReady()) {
-            mOutput->drawBuffer(mSurface->lockBuffer());
+            uint8_t* b = mSurface->lockBuffer();
+            if (b) {
+                mOutput->drawBuffer(b);
+            }
             mSurface->unlockBuffer();
         }
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
-        return 1;
+        return 0;
+    }
+
+    void bind(wl_client* client, uint32_t version, uint32_t id) {
+        LOGVP();
+        if (mClient) {
+            LOGVP("Only one client is supported");
+            return;
+        }
+        wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
+        if (not resource) {
+            wl_client_post_no_memory(client);
+            return;
+        }
+        wl_resource_set_implementation(resource, &getInterface(), this,
+                                       WaylandCompositor::hookClientDisconnects);
     }
 
 private:
@@ -213,6 +229,7 @@ private:
     unique_ptr<WaylandRegion> mRegion;
     wl_event_source* mRepaintTimer;
     X11Backend* mOutput;
+    wl_client* mClient;
     static constexpr int REPAINT_DELAY = 16;
 
     static void hookCreateSurface(wl_client* client, wl_resource* resource, uint32_t id) {
@@ -220,7 +237,6 @@ private:
         WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(
                     wl_resource_get_user_data(resource));
         wc->createSurface(client, resource, id);
-
     }
 
     static void hookCreateRegion(wl_client* client, wl_resource* resource, uint32_t id) {
@@ -233,6 +249,19 @@ private:
     static int hookRepaintHandler(void* data) {
         WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(data);
         return wc->repaint();
+    }
+
+    static void hookClientDisconnects(struct wl_resource *resource) {
+        WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(
+                    wl_resource_get_user_data(resource));
+        wc->clientDisconnects(wl_resource_get_client(resource));
+    }
+
+    void clientDisconnects(wl_client* client) {
+        LOGVP();
+        mClient = nullptr;
+        mSurface.release();
+        mRegion.release();
     }
 };
 
@@ -277,13 +306,7 @@ private:
     static void bindCompositor(wl_client* client, void* data, uint32_t version, uint32_t id) {
         LOGVP();
         WaylandCompositor* compositor = reinterpret_cast<WaylandCompositor*>(data);
-        wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
-        if (not resource) {
-            wl_client_post_no_memory(client);
-            return;
-        }
-        wl_resource_set_implementation(resource, &compositor->getInterface(), compositor,
-                                       nullptr);
+        compositor->bind(client, version, id);
     }
 
     static void bindShell(wl_client* client, void* data, uint32_t version, uint32_t id) {
