@@ -11,10 +11,8 @@
 class X11Backend
 {
 public:
-    X11Backend(uint32_t width, uint32_t height) {
-        mWidth = 480;
-        mHeight = 360;
-        mWlDisplay = nullptr;
+    X11Backend(uint32_t width, uint32_t height, wl_display* display) :
+        mWidth(width), mHeight(height), mWlDisplay(display) {
         mDisplay = XOpenDisplay(NULL);
         if (not mDisplay) {
             Exception(__FUNCTION__);
@@ -23,6 +21,12 @@ public:
         mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
         mWmDeleteWindow = XInternAtom(mDisplay, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(mDisplay, mWindow, &mWmDeleteWindow, 1);
+        XSizeHints* sizeHints = XAllocSizeHints();
+        sizeHints->flags = PMinSize | PMaxSize;
+        sizeHints->min_width = sizeHints->max_width = mWidth;
+        sizeHints->min_height = sizeHints->max_height = mHeight;
+        XSetWMNormalHints(mDisplay, mWindow, sizeHints);
+        XFree(sizeHints);
         XMapWindow(mDisplay, mWindow);
         XFlush(mDisplay);
         mXcbConnection = XGetXCBConnection(mDisplay);
@@ -34,6 +38,10 @@ public:
         if (not mImage) {
             throw Exception("Can't create XImage");
         }
+        mXcbSource = wl_event_loop_add_fd(wl_display_get_event_loop(display),
+                                          xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
+                                          X11Backend::hookHandleX11Events, this);
+        wl_event_source_check(mXcbSource);
     }
 
     ~X11Backend() {
@@ -44,8 +52,13 @@ public:
         mDisplay = nullptr;
     }
 
-    Display* getDisplay() { return mDisplay; }
-    Window getWindow() { return mWindow; }
+    uint32_t getWidth() {
+        return mWidth;
+    }
+
+    uint32_t getHeight() {
+        return mHeight;
+    }
 
     void setSize(uint32_t width, uint32_t height) {
         if (mWidth == width && mHeight == height) {
@@ -63,16 +76,6 @@ public:
         XClearWindow(mDisplay, mWindow);
         XFlush(mDisplay);
         mImage->data = nullptr;
-    }
-
-    void setWaylandDisplay(wl_display* display) {
-        if (mWlDisplay) {
-            throw Exception("Wayland display already set");
-        }
-        mWlDisplay = display;
-        mXcbSource = wl_event_loop_add_fd(wl_display_get_event_loop(display), xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
-                             X11Backend::hookHandleX11Events, this);
-        wl_event_source_check(mXcbSource);
     }
 
 private:

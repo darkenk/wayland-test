@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <memory>
 #include "../utils/make_unique.hpp"
+#include <cstring>
+#include <vector>
 
 using namespace std;
 
@@ -89,10 +91,10 @@ public:
         return mIsReady;
     }
 
-    uint8_t* lockBuffer() {
+    wl_shm_buffer* lockBuffer() {
         wl_shm_buffer* buf = wl_shm_buffer_get(mBuffer);
         wl_shm_buffer_begin_access(buf);
-        return (uint8_t*)wl_shm_buffer_get_data(buf);
+        return buf;
     }
 
     void unlockBuffer() {
@@ -168,10 +170,13 @@ public:
         mInterface.create_surface = WaylandCompositor::hookCreateSurface;
         mInterface.create_region = WaylandCompositor::hookCreateRegion;
         mOutput = output;
+        mDisplayWidth = mOutput->getWidth();
+        mDisplayHeight = mOutput->getHeight();
         // repaint handler
         wl_event_loop* loop = wl_display_get_event_loop(display);
         mRepaintTimer = wl_event_loop_add_timer(loop, WaylandCompositor::hookRepaintHandler, this);
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
+        mDisplayBuffer = make_unique<uint8_t[]>(mDisplayWidth * mDisplayHeight * 4);
     }
 
     ~WaylandCompositor() {
@@ -191,19 +196,17 @@ public:
     }
 
     void createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
-        if (mRegion) {
-            LOGVE("Only one region is currently supported");
-            return;
-        }
-        mRegion = make_unique<WaylandRegion>(client, resource, id);
+        LOGVP("Regions are not used :(");
+        mRegions.push_back(make_unique<WaylandRegion>(client, resource, id));
     }
 
     int repaint() {
         //LOGVP();
         if (mSurface && mSurface->isReady()) {
-            uint8_t* b = mSurface->lockBuffer();
+            wl_shm_buffer* b = mSurface->lockBuffer();
             if (b) {
-                mOutput->drawBuffer(b);
+                copyShmBufferToDisplay(b);
+                mOutput->drawBuffer(mDisplayBuffer.get());
             }
             mSurface->unlockBuffer();
         }
@@ -233,6 +236,10 @@ private:
     wl_event_source* mRepaintTimer;
     X11Backend* mOutput;
     wl_client* mClient;
+    int32_t mDisplayWidth;
+    int32_t mDisplayHeight;
+    unique_ptr<uint8_t[]> mDisplayBuffer;
+    vector<unique_ptr<WaylandRegion>> mRegions;
     static constexpr int REPAINT_DELAY = 16;
 
     static void hookCreateSurface(wl_client* client, wl_resource* resource, uint32_t id) {
@@ -266,6 +273,22 @@ private:
         mSurface.reset();
         mRegion.reset();
     }
+
+    void copyShmBufferToDisplay(wl_shm_buffer* b) {
+        uint8_t* data = reinterpret_cast<uint8_t*>(wl_shm_buffer_get_data(b));
+        int32_t w = wl_shm_buffer_get_width(b);
+        int32_t h = wl_shm_buffer_get_height(b);
+        int32_t lineSize = w < mDisplayWidth ? w * 4 : mDisplayWidth * 4;
+        int32_t nrOfLines = h < mDisplayHeight ? h : mDisplayHeight;
+        int32_t offsetDst = 0;
+        int32_t offsetSrc = 0;
+
+        for (int32_t y = 0; y < nrOfLines; y++) {
+            memcpy(mDisplayBuffer.get() + offsetSrc, data + offsetDst, lineSize);
+            offsetSrc += mDisplayWidth * 4;
+            offsetDst += w * 4;
+        }
+    }
 };
 
 class WaylandServer
@@ -276,8 +299,7 @@ public:
         if (not mDisplay) {
             throw exception();
         }
-        mOutput = new X11Backend(480, 360);
-        mOutput->setWaylandDisplay(mDisplay);
+        mOutput = new X11Backend(480, 360, mDisplay);
         mCompositor = make_unique<WaylandCompositor>(mDisplay, mOutput);
         const char* socketName = wl_display_add_socket_auto(mDisplay);
         LOGVP("Socket Name %s", socketName);
@@ -310,10 +332,6 @@ private:
         LOGVP();
         WaylandCompositor* compositor = reinterpret_cast<WaylandCompositor*>(data);
         compositor->bind(client, version, id);
-    }
-
-    static void bindShell(wl_client* client, void* data, uint32_t version, uint32_t id) {
-        LOGVP();
     }
 };
 
