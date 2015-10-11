@@ -3,7 +3,7 @@ project(shm_example)
 find_package(Wayland 1.7.0 COMPONENTS Client Egl REQUIRED)
 find_package(EGL REQUIRED)
 
-include_directories(
+include_directories(SYSTEM
     ${Wayland_INCLUDE_DIRS}
 )
 

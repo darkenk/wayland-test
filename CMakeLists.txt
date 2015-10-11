@@ -12,11 +12,17 @@ if (NOT CMAKE_VERBOSE_MAKEFILE)
     set(CMAKE_VERBOSE_MAKEFILE ON CACHE STRING "Enable compile verbose mode by default" FORCE)
 endif()
 
-add_definitions(
-    -std=gnu++11
-)
-
 find_package(ECM 1.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+
+include(cmake/CMakeLists.txt)
+option(ENABLE_TESTS "enable tests" ON)
+
+# build external libraries
+add_subdirectory(external)
+
+if (ENABLE_TESTS)
+    add_subdirectory(tests)
+endif()
 
 add_subdirectory(src)

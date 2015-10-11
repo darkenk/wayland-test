@@ -16,7 +16,7 @@ using namespace std;
 class WaylandRegion
 {
 public:
-    WaylandRegion(wl_client* client, wl_resource* resource, uint32_t id) {
+    WaylandRegion(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
         mInterface.destroy = WaylandRegion::hookRegionDestroy;
         mInterface.add = WaylandRegion::hookRegionAdd;
         mInterface.subtract = WaylandRegion::hookRegionSubtract;
@@ -29,18 +29,18 @@ private:
     struct wl_region_interface mInterface;
     wl_resource* mResource;
 
-    static void hookRegionDestroy(wl_client* client, wl_resource* resource) {
+    static void hookRegionDestroy(wl_client* /*client*/, wl_resource* resource) {
         LOGVP();
         wl_resource_destroy(resource);
     }
 
-    static void hookRegionAdd(wl_client* client, wl_resource* resource,
-                              int32_t x, int32_t y, int32_t width, int32_t height) {
+    static void hookRegionAdd(wl_client* /*client*/, wl_resource* /*resource*/,
+                              int32_t /*x*/, int32_t /*y*/, int32_t /*width*/, int32_t /*height*/) {
         LOGVP();
     }
 
-    static void hookRegionSubtract(wl_client* client, wl_resource* resource,
-                               int32_t x, int32_t y, int32_t width, int32_t height) {
+    static void hookRegionSubtract(wl_client* /*client*/, wl_resource* /*resource*/,
+                               int32_t /*x*/, int32_t /*y*/, int32_t /*width*/, int32_t /*height*/) {
         LOGVP();
     }
 };
@@ -69,12 +69,12 @@ public:
         mIsReady = false;
     }
 
-    void surfaceCommit(wl_client* client, wl_resource* resource) {
+    void surfaceCommit(wl_client* /*client*/, wl_resource* /*resource*/) {
         mIsReady = true;
     }
 
-    void surfaceAttach(wl_client* client, wl_resource* resource, wl_resource* buffer,
-                       int32_t sx, int32_t sy) {
+    void surfaceAttach(wl_client* /*client*/, wl_resource* /*resource*/, wl_resource* buffer,
+                       int32_t /*sx*/, int32_t /*sy*/) {
         mBuffer = buffer;
         wl_shm_buffer* buf = wl_shm_buffer_get(buffer);
         wl_shm_buffer_begin_access(buf);
@@ -83,7 +83,7 @@ public:
         wl_shm_buffer_end_access(buf);
     }
 
-    void surfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
+    void surfaceFrame(wl_client* client, wl_resource* /*resource*/, uint32_t callback) {
         mCallbackDone = wl_resource_create(client, &wl_callback_interface, 1, callback);
     }
 
@@ -114,7 +114,7 @@ private:
     int32_t mHeight;
     bool mIsReady;
 
-    static void surfaceDestroy(wl_client* client, wl_resource* resource) {
+    static void surfaceDestroy(wl_client* /*client*/, wl_resource* resource) {
         LOGVP();
         wl_resource_destroy(resource);
     }
@@ -125,8 +125,8 @@ private:
         getSurface(resource)->surfaceAttach(client, resource, buffer, sx, sy);
     }
 
-    static void surfaceDamage(wl_client* client, wl_resource* resource, int32_t x, int32_t y,
-                              int32_t width, int32_t height) {
+    static void surfaceDamage(wl_client* /*client*/, wl_resource* /*resource*/, int32_t /*x*/, int32_t /*y*/,
+                              int32_t /*width*/, int32_t /*height*/) {
         LOGVP();
     }
 
@@ -135,13 +135,13 @@ private:
         getSurface(resource)->surfaceFrame(client, resource, callback);
     }
 
-    static void surfaceSetOpaqueRegion(wl_client* client, wl_resource* resource,
-                                       wl_resource* regionResource) {
+    static void surfaceSetOpaqueRegion(wl_client* /*client*/, wl_resource* /*resource*/,
+                                       wl_resource* /*regionResource*/) {
         LOGVP();
     }
 
-    static void surfaceSetInputRegion(wl_client* client, wl_resource* resource,
-                                      wl_resource* regionResource) {
+    static void surfaceSetInputRegion(wl_client* /*client*/, wl_resource* /*resource*/,
+                                      wl_resource* /*regionResource*/) {
         LOGVP();
     }
 
@@ -150,11 +150,11 @@ private:
         getSurface(resource)->surfaceCommit(client, resource);
     }
 
-    static void surfaceSetBufferTransform(wl_client* client, wl_resource* resource, int transform) {
+    static void surfaceSetBufferTransform(wl_client* /*client*/, wl_resource* /*resource*/, int /*transform*/) {
         LOGVP();
     }
 
-    static void surfaceSetBufferScale(wl_client* client, wl_resource* resource, int32_t scale) {
+    static void surfaceSetBufferScale(wl_client* /*client*/, wl_resource* /*resource*/, int32_t /*scale*/) {
         LOGVP();
     }
 
@@ -267,7 +267,7 @@ private:
         wc->clientDisconnects(wl_resource_get_client(resource));
     }
 
-    void clientDisconnects(wl_client* client) {
+    void clientDisconnects(wl_client* /*client*/) {
         LOGVP();
         mClient = nullptr;
         mSurface.reset();
@@ -324,7 +324,6 @@ public:
 
 private:
     wl_display* mDisplay;
-    wl_global* mWlCompositor;
     unique_ptr<WaylandCompositor> mCompositor;
     X11Backend* mOutput;
 
@@ -335,7 +334,7 @@ private:
     }
 };
 
-int main(int argc, char *argv[])
+int main()
 {
     LOGVP("hello world!");
     WaylandServer().run();

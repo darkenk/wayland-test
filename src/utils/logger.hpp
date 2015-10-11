@@ -64,8 +64,12 @@ private:
 
 #define LOGP(color, fmt, ...) fprintf(stderr, color "%s:%d " fmt "\n\033[0m", __FUNCTION__, __LINE__, \
                                         ##__VA_ARGS__)
-#define LOGVP(fmt, ...) LOGP("\033[32m", fmt, ##__VA_ARGS__)
-#define LOGVD(fmt, ...) LOGP("\033[33m", fmt, ##__VA_ARGS__)
-#define LOGVE(fmt, ...) LOGP("\033[31m", fmt, ##__VA_ARGS__)
+//#define LOGVP(fmt, ...) LOGP("\033[32m", fmt, ##__VA_ARGS__)
+#define LOGP_INTERNAL(color, ...) LOGP(color, ##__VA_ARGS__, "")
+#define LOGVP(...) LOGP_INTERNAL("\033[32m", ##__VA_ARGS__)
+#define LOGVD(...) LOGP_INTERNAL("\033[33m", ##__VA_ARGS__)
+#define LOGVE(...) LOGP_INTERNAL("\033[31m", ##__VA_ARGS__)
+
+
 
 #endif // LOGGER_HPP

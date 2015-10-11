@@ -8,12 +8,15 @@
 #include "../utils/logger.hpp"
 #include "wayland-server.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 class X11Backend
 {
 public:
     X11Backend(uint32_t width, uint32_t height, wl_display* display) :
         mWidth(width), mHeight(height), mWlDisplay(display) {
-        mDisplay = XOpenDisplay(NULL);
+        mDisplay = XOpenDisplay(nullptr);
         if (not mDisplay) {
             Exception(__FUNCTION__);
         }
@@ -23,8 +26,8 @@ public:
         XSetWMProtocols(mDisplay, mWindow, &mWmDeleteWindow, 1);
         XSizeHints* sizeHints = XAllocSizeHints();
         sizeHints->flags = PMinSize | PMaxSize;
-        sizeHints->min_width = sizeHints->max_width = mWidth;
-        sizeHints->min_height = sizeHints->max_height = mHeight;
+        sizeHints->min_width = sizeHints->max_width = static_cast<int>(mWidth);
+        sizeHints->min_height = sizeHints->max_height = static_cast<int>(mHeight);
         XSetWMNormalHints(mDisplay, mWindow, sizeHints);
         XFree(sizeHints);
         XMapWindow(mDisplay, mWindow);
@@ -93,7 +96,7 @@ private:
     Atom mWmDeleteWindow;
     wl_display* mWlDisplay;
 
-    static int hookHandleX11Events(int fd, uint32_t mask, void* data) {
+    static int hookHandleX11Events(int /*fd*/, uint32_t /*mask*/, void* data) {
         return reinterpret_cast<X11Backend*>(data)->handleX11Events();
     }
 
@@ -104,7 +107,9 @@ private:
         }
         switch(event->response_type & ~0x80) {
         case XCB_CLIENT_MESSAGE:
-            if (((xcb_client_message_event_t*) event)->data.data32[0] == mWmDeleteWindow) {
+        {
+            xcb_client_message_event_t* t = reinterpret_cast<xcb_client_message_event_t*>(event);
+            if (t->data.data32[0] == mWmDeleteWindow) {
                 LOGVP("Destroy me");
                 wl_event_source_remove(mXcbSource);
                 XDestroyWindow(mDisplay, mWindow);
@@ -112,6 +117,7 @@ private:
                 wl_display_terminate(mWlDisplay);
             }
             break;
+        }
         default:
             LOGVP("Not handled %d", event->response_type & ~0x80);
             break;
@@ -120,5 +126,7 @@ private:
         return 1;
     }
 };
+
+#pragma GCC diagnostic pop
 
 #endif // X11BACKEND_HPP

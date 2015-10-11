@@ -14,7 +14,7 @@ using namespace std;
 class WaylandBuffer
 {
 public:
-    WaylandBuffer(wl_shm* shm, int width, int height) {
+    WaylandBuffer(wl_shm* shm, uint32_t width, uint32_t height) {
         mBufferListener.release = hookBufferRelease;
         mBuffer = createShmBuffer(shm, width, height);
         wl_buffer_add_listener(mBuffer, &mBufferListener, this);
@@ -44,9 +44,9 @@ private:
     bool mReadyToDraw;
     uint8_t* mData;
 
-    wl_buffer* createShmBuffer(wl_shm* shm, int width, int height) {
-        int stride = width * 4;
-        int size = stride * height;
+    wl_buffer* createShmBuffer(wl_shm* shm, uint32_t width, uint32_t height) {
+        int32_t stride = width * 4;
+        int32_t size = stride * height;
         int fd = createAnonymousFile(size);
         mData = reinterpret_cast<uint8_t*>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED,
                                                 fd, 0));
@@ -62,7 +62,7 @@ private:
         return buff;
     }
 
-    void release(wl_buffer* buffer) {
+    void release(wl_buffer* /*buffer*/) {
         LOGVP("");
         mReadyToDraw = true;
     }
@@ -100,7 +100,7 @@ public:
 
     virtual ~WaylandSurface() {}
 
-    void redraw(wl_callback* callback, uint32_t time) {
+    void redraw(wl_callback* callback, uint32_t /*time*/) {
         if (not mBuffer->readyToDraw()) {
             return;
         }
@@ -180,12 +180,15 @@ private:
     unique_ptr<WaylandSurface> mSurface;
 
     void registryHandler(wl_registry *registry, uint32_t id, const char *interface,
-                         uint32_t version) {
+                         uint32_t /*version*/) {
         LOGVP("Got a registry event for %s id %d\n", interface, id);
         if (strcmp(interface, wl_compositor_interface.name) == 0) {
-            mCompositor = (wl_compositor*)wl_registry_bind(registry, id, &wl_compositor_interface, 1);
+            mCompositor = reinterpret_cast<wl_compositor*>(wl_registry_bind(registry, id,
+                                                                            &wl_compositor_interface,
+                                                                            1));
         } else if (strcmp(interface, wl_shm_interface.name) == 0) {
-            mSharedMemory = (wl_shm*)wl_registry_bind(registry, id, &wl_shm_interface, 1);
+            mSharedMemory = reinterpret_cast<wl_shm*>(wl_registry_bind(registry, id,
+                                                                       &wl_shm_interface, 1));
         }
     }
 
@@ -194,13 +197,13 @@ private:
         reinterpret_cast<WaylandClient*>(data)->registryHandler(registry, id, interface, version);
     }
 
-    static void registryRemover(void *data, struct wl_registry *registry, uint32_t id) {
+    static void registryRemover(void */*data*/, struct wl_registry */*registry*/, uint32_t id) {
         LOGVP("Got a registry losing event for %d\n", id);
     }
 
 };
 
-int main(int argc, char *argv[])
+int main()
 {
     WaylandClient().run();
     return 0;

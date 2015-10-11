@@ -8,38 +8,38 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
-struct wl_display *display = NULL;
-struct wl_compositor *compositor = NULL;
-struct wl_surface *surface;
-struct wl_egl_window *egl_window;
-struct wl_region *region;
-struct wl_shell *shell;
-struct wl_shell_surface *shell_surface;
+static struct wl_display *display = NULL;
+static struct wl_compositor *compositor = NULL;
+static struct wl_surface *surface;
+static struct wl_egl_window *egl_window;
+static struct wl_region *region;
+static struct wl_shell *shell;
+//static struct wl_shell_surface *shell_surface;
 
-EGLDisplay egl_display;
-EGLConfig egl_conf;
-EGLSurface egl_surface;
-EGLContext egl_context;
+static EGLDisplay egl_display;
+static EGLConfig egl_conf;
+static EGLSurface egl_surface;
+static EGLContext egl_context;
 
 static void
-global_registry_handler(void *data, struct wl_registry *registry, uint32_t id,
-                        const char *interface, uint32_t version)
+global_registry_handler(void */*data*/, struct wl_registry *registry, uint32_t id,
+                        const char *interface, uint32_t /*version*/)
 {
     printf("Got a registry event for %s id %d\n", interface, id);
     if (strcmp(interface, "wl_compositor") == 0) {
-        compositor = (wl_compositor*)wl_registry_bind(registry,
+        compositor = reinterpret_cast<wl_compositor*>(wl_registry_bind(registry,
                                                       id,
                                                       &wl_compositor_interface,
-                                                      1);
+                                                      1));
     } else if (strcmp(interface, "wl_shell") == 0) {
-        shell = (wl_shell*)wl_registry_bind(registry, id,
-                                            &wl_shell_interface, 1);
+        shell = reinterpret_cast<wl_shell*>(wl_registry_bind(registry, id,
+                                            &wl_shell_interface, 1));
 
     }
 }
 
 static void
-global_registry_remover(void *data, struct wl_registry *registry, uint32_t id)
+global_registry_remover(void */*data*/, struct wl_registry */*registry*/, uint32_t id)
 {
     printf("Got a registry losing event for %d\n", id);
 }
@@ -73,7 +73,7 @@ create_window() {
 	egl_surface =
 			eglCreateWindowSurface(egl_display,
 								   egl_conf,
-								   egl_window, NULL);
+								   egl_window, nullptr);
 
 	if (eglMakeCurrent(egl_display, egl_surface,
 					   egl_surface, egl_context)) {
@@ -114,7 +114,7 @@ init_egl() {
         EGL_NONE
     };
 
-    egl_display = eglGetDisplay((EGLNativeDisplayType) display);
+    egl_display = eglGetDisplay(display);
     if (egl_display == EGL_NO_DISPLAY) {
         fprintf(stderr, "Can't create egl display\n");
         exit(1);
@@ -128,15 +128,16 @@ init_egl() {
     }
     printf("EGL major: %d, minor %d\n", major, minor);
 
-    eglGetConfigs(egl_display, NULL, 0, &count);
+    eglGetConfigs(egl_display, nullptr, 0, &count);
     printf("EGL has %d configs\n", count);
 
-    configs = (void**)calloc(count, sizeof *configs);
+    configs = reinterpret_cast<EGLConfig*>(calloc(static_cast<size_t>(count), sizeof *configs));
 
     eglChooseConfig(egl_display, config_attribs,
                     configs, count, &n);
 
-    for (i = 0; i < n; i++) {
+    i = 0;
+//    for (i = 0; i < n; i++) {
         eglGetConfigAttrib(egl_display,
                            configs[i], EGL_BUFFER_SIZE, &size);
         printf("Buffer size for config %d is %d\n", i, size);
@@ -146,8 +147,8 @@ init_egl() {
 
         // just choose the first one
         egl_conf = configs[i];
-        break;
-    }
+//        break;
+//    }
 
     egl_context =
             eglCreateContext(egl_display,
@@ -159,15 +160,15 @@ init_egl() {
 static void
 get_server_references(void) {
 
-    display = wl_display_connect(NULL);
-    if (display == NULL) {
+    display = wl_display_connect(nullptr);
+    if (not display) {
         fprintf(stderr, "Can't connect to display\n");
         exit(1);
     }
     printf("connected to display\n");
 
     struct wl_registry *registry = wl_display_get_registry(display);
-    wl_registry_add_listener(registry, &registry_listener, NULL);
+    wl_registry_add_listener(registry, &registry_listener, nullptr);
 
     wl_display_dispatch(display);
     wl_display_roundtrip(display);
@@ -180,7 +181,7 @@ get_server_references(void) {
     }
 }
 
-int main(int argc, char **argv) {
+int main() {
 
     get_server_references();
 

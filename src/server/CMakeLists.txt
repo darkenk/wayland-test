@@ -4,7 +4,7 @@ aux_source_directory(. SRC)
 find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
 find_package(X11 REQUIRED)
 
-include_directories(
+include_directories(SYSTEM
     ${Wayland_INCLUDE_DIRS}
     ${X11_INCLUDE_DIR}
 )
