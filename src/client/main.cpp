@@ -176,6 +176,7 @@ private:
     wl_display* mDisplay;
     wl_compositor* mCompositor;
     wl_shm* mSharedMemory;
+    wl_shell* mShell;
     wl_registry_listener mRegistryListener;
     unique_ptr<WaylandSurface> mSurface;
 
@@ -189,6 +190,9 @@ private:
         } else if (strcmp(interface, wl_shm_interface.name) == 0) {
             mSharedMemory = reinterpret_cast<wl_shm*>(wl_registry_bind(registry, id,
                                                                        &wl_shm_interface, 1));
+        } else if (strcmp(interface, wl_shell_interface.name) == 0 ) {
+            mShell = reinterpret_cast<wl_shell*>(wl_registry_bind(registry, id,
+                                                                  &wl_shell_interface, 1));
         }
     }
 

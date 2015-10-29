@@ -14,7 +14,7 @@ static struct wl_surface *surface;
 static struct wl_egl_window *egl_window;
 static struct wl_region *region;
 static struct wl_shell *shell;
-//static struct wl_shell_surface *shell_surface;
+static struct wl_shell_surface *shell_surface;
 
 static EGLDisplay egl_display;
 static EGLConfig egl_conf;
@@ -193,8 +193,8 @@ int main() {
         fprintf(stderr, "Created surface\n");
     }
 
-//    shell_surface = wl_shell_get_shell_surface(shell, surface);
-//    wl_shell_surface_set_toplevel(shell_surface);
+    shell_surface = wl_shell_get_shell_surface(shell, surface);
+    wl_shell_surface_set_toplevel(shell_surface);
 
     create_opaque_region();
     init_egl();

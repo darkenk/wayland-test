@@ -59,8 +59,8 @@ private:
 
     static void bindShell(wl_client* client, void* data, uint32_t version, uint32_t id) {
         LOGVP();
-        WaylandCompositor* compositor = reinterpret_cast<WaylandCompositor*>(data);
-        compositor->bind(client, version, id);
+        WaylandShell* shell = reinterpret_cast<WaylandShell*>(data);
+        shell->bind(client, version, id);
     }
 };
 

@@ -3,15 +3,18 @@
 
 #include <wayland-server.h>
 #include "../utils/logger.hpp"
+#include "../utils/make_unique.hpp"
+#include "waylandshellsurface.hpp"
 
 class WaylandShell
 {
 public:
     WaylandShell() {}
 
-    void getShellSurface(wl_client* /*client*/, wl_resource* /*resource*/, uint32_t /*id*/,
+    void getShellSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id,
                          wl_resource* /*surface*/) {
         LOGVP();
+        mShellSurface = std::make_unique<WaylandShellSurface>(client, id);
     }
 
     void bind(wl_client* client, uint32_t version, uint32_t id) {
@@ -26,6 +29,7 @@ public:
 
 private:
     static struct wl_shell_interface sInterface;
+    std::unique_ptr<WaylandShellSurface> mShellSurface;
 
     static void hookGetShellSurface(wl_client* client, wl_resource* resource, uint32_t id,
                              wl_resource* surface) {
