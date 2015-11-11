@@ -9,16 +9,18 @@
 #include "waylandcompositor.hpp"
 #include "waylandshell.hpp"
 #include "waylandoutput.hpp"
+#include <utility>
 
 class WaylandServer
 {
 public:
-    WaylandServer() {
+    WaylandServer(std::unique_ptr<X11Backend> backend) {
         mDisplay = wl_display_create();
         if (not mDisplay) {
             throw std::exception();
         }
-        mBackend = new X11Backend(480, 360, mDisplay);
+        mBackend = std::move(backend);
+        mBackend->init(mDisplay);
         mCompositor = std::make_unique<WaylandCompositor>(mDisplay, mBackend);
         mShell = std::make_unique<WaylandShell>();
         mOutput = std::make_unique<WaylandOutput>();
@@ -44,8 +46,7 @@ public:
         wl_display_terminate(mDisplay);
         wl_display_destroy(mDisplay);
         mDisplay = nullptr;
-        delete mBackend;
-        mBackend = nullptr;
+        mBackend.reset();
     }
 
     void run() {
@@ -54,8 +55,8 @@ public:
 
 private:
     wl_display* mDisplay;
+    std::shared_ptr<X11Backend> mBackend;
     std::unique_ptr<WaylandCompositor> mCompositor;
-    X11Backend* mBackend;
     std::unique_ptr<WaylandShell> mShell;
     std::unique_ptr<WaylandOutput> mOutput;
 

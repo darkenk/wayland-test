@@ -2,14 +2,19 @@
 #define WAYLANDSURFACE_HPP
 
 #include <wayland-server.h>
+#include <memory>
+#include <utility>
 #include "../utils/logger.hpp"
+#include "waylandshellsurface.hpp"
 
 class WaylandSurface
 {
 public:
-    WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id) {
+    WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id):
+        /*mX(0),*/ mY(0) {
         mResource = wl_resource_create(client, &wl_surface_interface,
                                        wl_resource_get_version(resource), id);
+
         mBuffer = nullptr;
         mCallbackDone = nullptr;
         if (not mResource) {
@@ -68,6 +73,22 @@ public:
         return mClient;
     }
 
+    int y() {
+        return mY;
+    }
+
+    void setY(int y) {
+        mY = y;
+    }
+
+    void setShellSurface(std::unique_ptr<WaylandShellSurface> shellSurface) {
+        mShellSurface = std::move(shellSurface);
+    }
+
+    bool isShellSurface() {
+        return mShellSurface != nullptr;
+    }
+
 private:
     static struct wl_surface_interface sInterface;
     wl_resource* mResource;
@@ -77,6 +98,9 @@ private:
     int32_t mHeight;
     bool mIsReady;
     wl_client* mClient;
+    //int mX;
+    int mY;
+    std::unique_ptr<WaylandShellSurface> mShellSurface;
 
     static void surfaceDestroy(wl_client* /*client*/, wl_resource* resource) {
         LOGVP();

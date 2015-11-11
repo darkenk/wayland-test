@@ -14,7 +14,7 @@
 class WaylandCompositor
 {
 public:
-    WaylandCompositor(wl_display* display, X11Backend* output) {
+    WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output) {
         mOutput = output;
         mDisplayWidth = mOutput->getWidth();
         mDisplayHeight = mOutput->getHeight();
@@ -29,10 +29,6 @@ public:
         free(mRepaintTimer);
     }
 
-    struct wl_compositor_interface& getInterface() {
-        return sInterface;
-    }
-
     void createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
         mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, resource, id));
     }
@@ -43,18 +39,39 @@ public:
     }
 
     int repaint() {
+        relayoutSurfaces();
         for (auto& surface : mSurfacesList) {
-            if (surface->isReady()) {
+            if (surface && surface->isReady()) {
                 wl_shm_buffer* b = surface->lockBuffer();
                 if (b) {
-                    copyShmBufferToDisplay(b);
-                    mOutput->drawBuffer(mDisplayBuffer.get());
+                    copyShmBufferToDisplay(b, surface->y());
                 }
                 surface->unlockBuffer();
             }
         }
+        mOutput->drawBuffer(mDisplayBuffer.get());
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
         return 0;
+    }
+
+    void relayoutSurfaces() {
+        int count = 0;
+        for (auto& s : mSurfacesList) {
+            if (s->isShellSurface()) {
+                count++;
+            }
+        }
+        if (not count) {
+            return;
+        }
+        int height = mDisplayHeight / count;
+        int y = 0;
+        for (auto& s : mSurfacesList) {
+            if (s->isShellSurface()) {
+                s->setY(y);
+                y += height;
+            }
+        }
     }
 
     void bind(wl_client* client, uint32_t version, uint32_t id) {
@@ -64,7 +81,7 @@ public:
             wl_client_post_no_memory(client);
             return;
         }
-        wl_resource_set_implementation(resource, &getInterface(), this,
+        wl_resource_set_implementation(resource, &sInterface, this,
                                        WaylandCompositor::hookClientDisconnects);
     }
 
@@ -72,7 +89,7 @@ private:
     static struct wl_compositor_interface sInterface;
     std::vector<std::unique_ptr<WaylandSurface>> mSurfacesList;
     wl_event_source* mRepaintTimer;
-    X11Backend* mOutput;
+    std::shared_ptr<X11Backend> mOutput;
     int32_t mDisplayWidth;
     int32_t mDisplayHeight;
     std::unique_ptr<uint8_t[]> mDisplayBuffer;
@@ -110,16 +127,16 @@ private:
                        (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
     }
 
-    void copyShmBufferToDisplay(wl_shm_buffer* b) {
+    void copyShmBufferToDisplay(wl_shm_buffer* b, int posY = 0) {
         uint8_t* data = reinterpret_cast<uint8_t*>(wl_shm_buffer_get_data(b));
         int32_t w = wl_shm_buffer_get_width(b);
         int32_t h = wl_shm_buffer_get_height(b);
         int32_t lineSize = w < mDisplayWidth ? w * 4 : mDisplayWidth * 4;
-        int32_t nrOfLines = h < mDisplayHeight ? h : mDisplayHeight;
+        int32_t nrOfLines = (posY + h) < mDisplayHeight ? (posY + h) : mDisplayHeight;
         int32_t offsetDst = 0;
-        int32_t offsetSrc = 0;
+        int32_t offsetSrc = posY * mDisplayWidth * 4;
 
-        for (int32_t y = 0; y < nrOfLines; y++) {
+        for (int32_t y = posY; y < nrOfLines; y++) {
             std::memcpy(mDisplayBuffer.get() + offsetSrc, data + offsetDst, lineSize);
             offsetSrc += mDisplayWidth * 4;
             offsetDst += w * 4;

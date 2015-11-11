@@ -14,8 +14,21 @@
 class X11Backend
 {
 public:
-    X11Backend(uint32_t width, uint32_t height, wl_display* display) :
-        mWidth(width), mHeight(height), mWlDisplay(display) {
+    X11Backend(uint32_t width, uint32_t height) :
+        mWidth(width), mHeight(height), mWlDisplay(nullptr) {
+
+    }
+
+    ~X11Backend() {
+        XDestroyImage(mImage);
+        mImage = nullptr;
+        XFreeGC(mDisplay, mGraphicContext);
+        XCloseDisplay(mDisplay);
+        mDisplay = nullptr;
+    }
+
+    void init(wl_display* display) {
+        mWlDisplay = display;
         mDisplay = XOpenDisplay(nullptr);
         if (not mDisplay) {
             Exception(__FUNCTION__);
@@ -45,14 +58,6 @@ public:
                                           xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
                                           X11Backend::hookHandleX11Events, this);
         wl_event_source_check(mXcbSource);
-    }
-
-    ~X11Backend() {
-        XDestroyImage(mImage);
-        mImage = nullptr;
-        XFreeGC(mDisplay, mGraphicContext);
-        XCloseDisplay(mDisplay);
-        mDisplay = nullptr;
     }
 
     uint32_t getWidth() {
