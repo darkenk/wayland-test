@@ -10,22 +10,31 @@ public:
     WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id) {
         mResource = wl_resource_create(client, &wl_surface_interface,
                                        wl_resource_get_version(resource), id);
+        mBuffer = nullptr;
+        mCallbackDone = nullptr;
         if (not mResource) {
             wl_resource_post_no_memory(resource);
             return;
         }
         wl_resource_set_implementation(mResource, &sInterface, this, nullptr);
         mIsReady = false;
+        mClient = client;
     }
 
     void surfaceCommit(wl_client* /*client*/, wl_resource* /*resource*/) {
-        mIsReady = true;
+        if (mBuffer) {
+            mIsReady = true;
+        }
     }
 
     void surfaceAttach(wl_client* /*client*/, wl_resource* /*resource*/, wl_resource* buffer,
                        int32_t /*sx*/, int32_t /*sy*/) {
-        mBuffer = buffer;
         wl_shm_buffer* buf = wl_shm_buffer_get(buffer);
+        if (not buf) {
+            LOGVP("Why buffer is empty?");
+            return;
+        }
+        mBuffer = buffer;
         wl_shm_buffer_begin_access(buf);
         mHeight = wl_shm_buffer_get_height(buf);
         mWidth = wl_shm_buffer_get_width(buf);
@@ -51,7 +60,12 @@ public:
         wl_resource_queue_event(mBuffer, WL_BUFFER_RELEASE);
         wl_callback_send_done(mCallbackDone, 0 /*dumb timestamp*/);
         wl_shm_buffer_end_access(buf);
+        mBuffer = nullptr;
         mIsReady = false;
+    }
+
+    wl_client* client() const {
+        return mClient;
     }
 
 private:
@@ -62,6 +76,7 @@ private:
     int32_t mWidth;
     int32_t mHeight;
     bool mIsReady;
+    wl_client* mClient;
 
     static void surfaceDestroy(wl_client* /*client*/, wl_resource* resource) {
         LOGVP();

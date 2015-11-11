@@ -4,6 +4,7 @@
 #include <wayland-server.h>
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include <cstring>
 #include "x11backend.hpp"
 #include "../utils/make_unique.hpp"
@@ -13,7 +14,7 @@
 class WaylandCompositor
 {
 public:
-    WaylandCompositor(wl_display* display, X11Backend* output) : mClient(nullptr) {
+    WaylandCompositor(wl_display* display, X11Backend* output) {
         mOutput = output;
         mDisplayWidth = mOutput->getWidth();
         mDisplayHeight = mOutput->getHeight();
@@ -33,11 +34,7 @@ public:
     }
 
     void createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
-        if (mSurface) {
-            LOGVE("Only one surface is currently supported");
-            return;
-        }
-        mSurface = std::make_unique<WaylandSurface>(client, resource, id);
+        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, resource, id));
     }
 
     void createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
@@ -46,14 +43,15 @@ public:
     }
 
     int repaint() {
-        //LOGVP();
-        if (mSurface && mSurface->isReady()) {
-            wl_shm_buffer* b = mSurface->lockBuffer();
-            if (b) {
-                copyShmBufferToDisplay(b);
-                mOutput->drawBuffer(mDisplayBuffer.get());
+        for (auto& surface : mSurfacesList) {
+            if (surface->isReady()) {
+                wl_shm_buffer* b = surface->lockBuffer();
+                if (b) {
+                    copyShmBufferToDisplay(b);
+                    mOutput->drawBuffer(mDisplayBuffer.get());
+                }
+                surface->unlockBuffer();
             }
-            mSurface->unlockBuffer();
         }
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
         return 0;
@@ -61,10 +59,6 @@ public:
 
     void bind(wl_client* client, uint32_t version, uint32_t id) {
         LOGVP();
-        if (mClient) {
-            LOGVP("Only one client is supported");
-            return;
-        }
         wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
         if (not resource) {
             wl_client_post_no_memory(client);
@@ -76,11 +70,9 @@ public:
 
 private:
     static struct wl_compositor_interface sInterface;
-    std::unique_ptr<WaylandSurface> mSurface;
-    std::unique_ptr<WaylandRegion> mRegion;
+    std::vector<std::unique_ptr<WaylandSurface>> mSurfacesList;
     wl_event_source* mRepaintTimer;
     X11Backend* mOutput;
-    wl_client* mClient;
     int32_t mDisplayWidth;
     int32_t mDisplayHeight;
     std::unique_ptr<uint8_t[]> mDisplayBuffer;
@@ -112,11 +104,10 @@ private:
         wc->clientDisconnects(wl_resource_get_client(resource));
     }
 
-    void clientDisconnects(wl_client* /*client*/) {
+    void clientDisconnects(wl_client* client) {
         LOGVP();
-        mClient = nullptr;
-        mSurface.reset();
-        mRegion.reset();
+        std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [client]
+                       (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
     }
 
     void copyShmBufferToDisplay(wl_shm_buffer* b) {

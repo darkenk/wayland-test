@@ -8,6 +8,7 @@
 #include "x11backend.hpp"
 #include "waylandcompositor.hpp"
 #include "waylandshell.hpp"
+#include "waylandoutput.hpp"
 
 class WaylandServer
 {
@@ -17,18 +18,24 @@ public:
         if (not mDisplay) {
             throw std::exception();
         }
-        mOutput = new X11Backend(480, 360, mDisplay);
-        mCompositor = std::make_unique<WaylandCompositor>(mDisplay, mOutput);
+        mBackend = new X11Backend(480, 360, mDisplay);
+        mCompositor = std::make_unique<WaylandCompositor>(mDisplay, mBackend);
         mShell = std::make_unique<WaylandShell>();
+        mOutput = std::make_unique<WaylandOutput>();
         const char* socketName = wl_display_add_socket_auto(mDisplay);
         LOGVP("Socket Name %s", socketName);
         if (not wl_global_create(mDisplay, &wl_compositor_interface, 3, mCompositor.get(),
-                                 WaylandServer::bindCompositor)) {
+                                 WaylandServer::hookBind<WaylandCompositor>)) {
             throw std::exception();
         }
         wl_display_init_shm(mDisplay);
         if (not wl_global_create(mDisplay, &wl_shell_interface, 1, mShell.get(),
-                                 WaylandServer::bindShell)) {
+                                 WaylandServer::hookBind<WaylandShell>)) {
+            throw std::exception();
+        }
+
+        if (not wl_global_create(mDisplay, &wl_output_interface, 1, mOutput.get(),
+                                 WaylandServer::hookBind<WaylandOutput>)) {
             throw std::exception();
         }
     }
@@ -37,8 +44,8 @@ public:
         wl_display_terminate(mDisplay);
         wl_display_destroy(mDisplay);
         mDisplay = nullptr;
-        delete mOutput;
-        mOutput = nullptr;
+        delete mBackend;
+        mBackend = nullptr;
     }
 
     void run() {
@@ -48,19 +55,14 @@ public:
 private:
     wl_display* mDisplay;
     std::unique_ptr<WaylandCompositor> mCompositor;
-    X11Backend* mOutput;
+    X11Backend* mBackend;
     std::unique_ptr<WaylandShell> mShell;
+    std::unique_ptr<WaylandOutput> mOutput;
 
-    static void bindCompositor(wl_client* client, void* data, uint32_t version, uint32_t id) {
-        LOGVP();
-        WaylandCompositor* compositor = reinterpret_cast<WaylandCompositor*>(data);
-        compositor->bind(client, version, id);
-    }
-
-    static void bindShell(wl_client* client, void* data, uint32_t version, uint32_t id) {
-        LOGVP();
-        WaylandShell* shell = reinterpret_cast<WaylandShell*>(data);
-        shell->bind(client, version, id);
+    template<class T>
+    static void hookBind(wl_client* client, void* data, uint32_t version, uint32_t id) {
+        T* object = reinterpret_cast<T*>(data);
+        object->bind(client, version, id);
     }
 };
 
