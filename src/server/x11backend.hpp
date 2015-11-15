@@ -4,6 +4,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include "../utils/exceptions.hpp"
 #include "../utils/logger.hpp"
 #include "wayland-server.h"
@@ -37,23 +38,14 @@ public:
         mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
         mWmDeleteWindow = XInternAtom(mDisplay, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(mDisplay, mWindow, &mWmDeleteWindow, 1);
-        XSizeHints* sizeHints = XAllocSizeHints();
-        sizeHints->flags = PMinSize | PMaxSize;
-        sizeHints->min_width = sizeHints->max_width = static_cast<int>(mWidth);
-        sizeHints->min_height = sizeHints->max_height = static_cast<int>(mHeight);
-        XSetWMNormalHints(mDisplay, mWindow, sizeHints);
-        XFree(sizeHints);
+        initWindowTitle();
+        initWindowFixedSize();
+        initWindowToTop();
+        initWindowPixmap();
         XMapWindow(mDisplay, mWindow);
         XFlush(mDisplay);
         mXcbConnection = XGetXCBConnection(mDisplay);
-        mPixmap = XCreatePixmap(mDisplay, mWindow, mWidth, mHeight, sDepth);
-        XGCValues gcvalues;
-        mGraphicContext = XCreateGC(mDisplay, mPixmap, 0, &gcvalues);
-        mImage = XCreateImage(mDisplay, nullptr, sDepth, ZPixmap, 0, nullptr, mWidth, mHeight,
-                              32, 0);
-        if (not mImage) {
-            throw Exception("Can't create XImage");
-        }
+
         mXcbSource = wl_event_loop_add_fd(wl_display_get_event_loop(display),
                                           xcb_get_file_descriptor(mXcbConnection), WL_EVENT_READABLE,
                                           X11Backend::hookHandleX11Events, this);
@@ -103,6 +95,37 @@ private:
 
     static int hookHandleX11Events(int /*fd*/, uint32_t /*mask*/, void* data) {
         return reinterpret_cast<X11Backend*>(data)->handleX11Events();
+    }
+
+    void initWindowToTop() {
+        Atom stateAbove;
+        stateAbove = XInternAtom(mDisplay, "_NET_WM_STATE_ABOVE", False);
+        XChangeProperty(mDisplay, mWindow, XInternAtom(mDisplay, "_NET_WM_STATE", False), XA_ATOM,
+                        32, PropModeReplace, (unsigned char *) &stateAbove, 1);
+    }
+
+    void initWindowFixedSize() {
+        XSizeHints* sizeHints = XAllocSizeHints();
+        sizeHints->flags = PMinSize | PMaxSize;
+        sizeHints->min_width = sizeHints->max_width = static_cast<int>(mWidth);
+        sizeHints->min_height = sizeHints->max_height = static_cast<int>(mHeight);
+        XSetWMNormalHints(mDisplay, mWindow, sizeHints);
+        XFree(sizeHints);
+    }
+
+    void initWindowPixmap() {
+        mPixmap = XCreatePixmap(mDisplay, mWindow, mWidth, mHeight, sDepth);
+        XGCValues gcvalues;
+        mGraphicContext = XCreateGC(mDisplay, mPixmap, 0, &gcvalues);
+        mImage = XCreateImage(mDisplay, nullptr, sDepth, ZPixmap, 0, nullptr, mWidth, mHeight,
+                              32, 0);
+        if (not mImage) {
+            throw Exception("Can't create XImage");
+        }
+    }
+
+    void initWindowTitle() {
+        XStoreName(mDisplay, mWindow, "Wayland-test");
     }
 
     int handleX11Events() {
