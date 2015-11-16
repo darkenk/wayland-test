@@ -17,4 +17,7 @@ target_link_libraries(${PROJECT_NAME}
     ${X11_LIBRARIES}
     xcb
     X11-xcb
+    EGL
+    GLESv2
+    glapi
 )

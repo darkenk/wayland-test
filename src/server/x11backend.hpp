@@ -8,6 +8,7 @@
 #include "../utils/exceptions.hpp"
 #include "../utils/logger.hpp"
 #include "wayland-server.h"
+#include <EGL/egl.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -76,6 +77,14 @@ public:
         XClearWindow(mDisplay, mWindow);
         XFlush(mDisplay);
         mImage->data = nullptr;
+    }
+
+    EGLNativeWindowType getNativeWindowType() {
+        return mWindow;
+    }
+
+    EGLNativeDisplayType getNativeDisplayType() {
+        return mDisplay;
     }
 
 private:
