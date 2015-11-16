@@ -25,7 +25,7 @@ class WaylandSurface
 {
 public:
     WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id):
-        /*mX(0),*/ mY(0) {
+        mX(0), mY(0) {
         mResource = wl_resource_create(client, &wl_surface_interface,
                                        wl_resource_get_version(resource), id);
         if (not mResource) {
@@ -42,7 +42,7 @@ public:
         if (mBack->buffer) {
             mBack->isReady = true;
             mBuffersFilled++;
-            if (mBuffersFilled < MAX_BUFFERS) {
+            if (mBuffersFilled < MAX_BUFFERS && mBack->callbackDone) {
                 wl_callback_send_done(mBack->callbackDone, 0 /*dumb timestamp*/);
                 mBack->callbackDone = nullptr;
             }
@@ -99,6 +99,14 @@ public:
         return mClient;
     }
 
+    int x() {
+        return mX;
+    }
+
+    void setX(int x) {
+        mX = x;
+    }
+
     int y() {
         return mY;
     }
@@ -123,7 +131,7 @@ private:
     uint32_t mBuffersFilled = 0;
     static constexpr uint32_t MAX_BUFFERS  = 2;
     wl_client* mClient;
-    //int mX;
+    int mX;
     int mY;
     std::unique_ptr<WaylandShellSurface> mShellSurface;
 

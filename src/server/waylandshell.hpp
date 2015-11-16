@@ -12,13 +12,6 @@ class WaylandShell
 public:
     WaylandShell() {}
 
-    void getShellSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id,
-                         wl_resource* surface) {
-        LOGVP();
-        WaylandSurface* ws = reinterpret_cast<WaylandSurface*>(wl_resource_get_user_data(surface));
-        ws->setShellSurface(std::make_unique<WaylandShellSurface>(client, id));
-    }
-
     void bind(wl_client* client, uint32_t version, uint32_t id) {
         LOGVP();
         wl_resource* resource = wl_resource_create(client, &wl_shell_interface, version, id);
@@ -31,6 +24,13 @@ public:
 
 private:
     static struct wl_shell_interface sInterface;
+
+    void getShellSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id,
+                         wl_resource* surface) {
+        LOGVP();
+        WaylandSurface* ws = reinterpret_cast<WaylandSurface*>(wl_resource_get_user_data(surface));
+        ws->setShellSurface(std::make_unique<WaylandShellSurface>(client, id));
+    }
 
     static void hookGetShellSurface(wl_client* client, wl_resource* resource, uint32_t id,
                              wl_resource* surface) {

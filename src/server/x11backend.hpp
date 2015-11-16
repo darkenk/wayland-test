@@ -9,6 +9,7 @@
 #include "../utils/logger.hpp"
 #include "wayland-server.h"
 #include <EGL/egl.h>
+#include "waylandseat.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -37,6 +38,9 @@ public:
         }
         mRoot = DefaultRootWindow(mDisplay);
         mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
+        XSetWindowAttributes swa;
+        swa.event_mask = PointerMotionMask | ButtonPressMask |ButtonReleaseMask;
+        XChangeWindowAttributes(mDisplay, mWindow, CWEventMask, &swa);
         mWmDeleteWindow = XInternAtom(mDisplay, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(mDisplay, mWindow, &mWmDeleteWindow, 1);
         initWindowTitle();
@@ -87,6 +91,10 @@ public:
         return mDisplay;
     }
 
+    void setPointerListener(std::shared_ptr<PointerListener> listener) {
+        mPointerListener = listener;
+    }
+
 private:
     static constexpr int sDepth = 24;
     Pixmap mPixmap;
@@ -101,6 +109,7 @@ private:
     xcb_connection_t* mXcbConnection;
     Atom mWmDeleteWindow;
     wl_display* mWlDisplay;
+    std::shared_ptr<PointerListener> mPointerListener;
 
     static int hookHandleX11Events(int /*fd*/, uint32_t /*mask*/, void* data) {
         return reinterpret_cast<X11Backend*>(data)->handleX11Events();
@@ -145,7 +154,7 @@ private:
         switch(event->response_type & ~0x80) {
         case XCB_CLIENT_MESSAGE:
         {
-            xcb_client_message_event_t* t = reinterpret_cast<xcb_client_message_event_t*>(event);
+            auto t = reinterpret_cast<xcb_client_message_event_t*>(event);
             if (t->data.data32[0] == mWmDeleteWindow) {
                 LOGVP("Destroy me");
                 wl_event_source_remove(mXcbSource);
@@ -153,6 +162,28 @@ private:
                 XFlush(mDisplay);
                 wl_display_terminate(mWlDisplay);
             }
+            break;
+        }
+
+        case XCB_BUTTON_PRESS:
+        {
+            //auto t = reinterpret_cast<xcb_button_press_event_t*>(event);
+            LOGVP();
+            break;
+        }
+        case XCB_BUTTON_RELEASE:
+        {
+            //auto t = reinterpret_cast<xcb_button_release_event_t*>(event);
+            LOGVP();
+            break;
+        }
+        case XCB_MOTION_NOTIFY:
+        {
+            auto t = reinterpret_cast<xcb_motion_notify_event_t*>(event);
+            if (mPointerListener) {
+                mPointerListener->move(t->event_x, t->event_y);
+            }
+            LOGVP("Mouse moved at coordinates (%i,%i)", t->event_x, t->event_y);
             break;
         }
         default:
