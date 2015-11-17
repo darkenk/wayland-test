@@ -47,6 +47,17 @@ public:
                 mBack->callbackDone = nullptr;
             }
             swapBuffers();
+            if (mBack->buffer) {
+                wl_resource_queue_event(mBack->buffer, WL_BUFFER_RELEASE);
+                mBack->buffer = nullptr;
+                if (mBack->callbackDone) {
+                    wl_callback_send_done(mBack->callbackDone, 0 /*dumb timestamp*/);
+                    mBack->callbackDone = nullptr;
+                }
+                mBack->isReady = false;
+                mBuffersFilled--;
+            }
+
         }
     }
 
@@ -84,15 +95,11 @@ public:
             return;
         }
         wl_shm_buffer* buf = wl_shm_buffer_get(mFront->buffer);
-        wl_resource_queue_event(mFront->buffer, WL_BUFFER_RELEASE);
         wl_shm_buffer_end_access(buf);
-        mFront->buffer = nullptr;
         if (mFront->callbackDone) {
             wl_callback_send_done(mFront->callbackDone, 0 /*dumb timestamp*/);
             mFront->callbackDone = nullptr;
         }
-        mFront->isReady = false;
-        mBuffersFilled--;
     }
 
     wl_client* client() const {
