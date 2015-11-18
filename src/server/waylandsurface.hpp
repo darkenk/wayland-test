@@ -107,7 +107,7 @@ public:
     }
 
     int x() {
-        return mX;
+        return mX + mBack->x;
     }
 
     void setX(int x) {
@@ -115,7 +115,7 @@ public:
     }
 
     int y() {
-        return mY;
+        return mY + mBack->y;
     }
 
     void setY(int y) {

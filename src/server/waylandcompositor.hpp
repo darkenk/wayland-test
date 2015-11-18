@@ -40,11 +40,12 @@ public:
 
     int repaint() {
         relayoutSurfaces();
+        clearDisplay();
         for (auto& surface : mSurfacesList) {
             if (surface && surface->isReady()) {
                 wl_shm_buffer* b = surface->lockBuffer();
                 if (b) {
-                    copyShmBufferToDisplay(b, surface->y());
+                    copyShmBufferToDisplay(b, surface->y(), surface->x());
                 }
                 surface->unlockBuffer();
             }
@@ -95,6 +96,7 @@ private:
     std::unique_ptr<uint8_t[]> mDisplayBuffer;
     std::vector<std::unique_ptr<WaylandRegion>> mRegions;
     static constexpr int REPAINT_DELAY = 16;
+    static constexpr int BYTES_PER_PIXEL = 4;
 
     static void hookCreateSurface(wl_client* client, wl_resource* resource, uint32_t id) {
         LOGVP();
@@ -127,19 +129,29 @@ private:
                        (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
     }
 
-    void copyShmBufferToDisplay(wl_shm_buffer* b, int posY = 0) {
+    void clearDisplay() {
+        memset(mDisplayBuffer.get(), 0, mDisplayWidth * mDisplayHeight * BYTES_PER_PIXEL);
+    }
+
+    void copyShmBufferToDisplay(wl_shm_buffer* b, int posY = 0, int posX = 0) {
         uint8_t* data = reinterpret_cast<uint8_t*>(wl_shm_buffer_get_data(b));
         int32_t w = wl_shm_buffer_get_width(b);
         int32_t h = wl_shm_buffer_get_height(b);
-        int32_t lineSize = w < mDisplayWidth ? w * 4 : mDisplayWidth * 4;
+        int32_t lineSize = mDisplayWidth - posX;
+        lineSize = w < lineSize ? w * BYTES_PER_PIXEL : lineSize * BYTES_PER_PIXEL;
         int32_t nrOfLines = (posY + h) < mDisplayHeight ? (posY + h) : mDisplayHeight;
-        int32_t offsetDst = 0;
-        int32_t offsetSrc = posY * mDisplayWidth * 4;
+        int32_t offsetSrc = 0;
+        if (posX < 0 ) {
+            offsetSrc -= posX * BYTES_PER_PIXEL;
+            lineSize -= offsetSrc;
+            posX = 0;
+        }
+        int32_t offsetDst = (posY * mDisplayWidth + posX) * BYTES_PER_PIXEL;
 
         for (int32_t y = posY; y < nrOfLines; y++) {
-            std::memcpy(mDisplayBuffer.get() + offsetSrc, data + offsetDst, lineSize);
-            offsetSrc += mDisplayWidth * 4;
-            offsetDst += w * 4;
+            std::memcpy(mDisplayBuffer.get() + offsetDst, data + offsetSrc, lineSize);
+            offsetDst += mDisplayWidth * BYTES_PER_PIXEL;
+            offsetSrc += w * BYTES_PER_PIXEL;
         }
     }
 };
