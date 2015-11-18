@@ -11,7 +11,7 @@
 #include "waylandsurface.hpp"
 #include "waylandregion.hpp"
 
-class WaylandCompositor
+class WaylandCompositor : public DestroyListener<WaylandSurface>
 {
 public:
     WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output) {
@@ -30,7 +30,7 @@ public:
     }
 
     void createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
-        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, resource, id));
+        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, resource, id, this));
     }
 
     void createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
@@ -84,6 +84,11 @@ public:
         }
         wl_resource_set_implementation(resource, &sInterface, this,
                                        WaylandCompositor::hookClientDisconnects);
+    }
+
+    void notify(WaylandSurface* surface) {
+        mSurfacesList.erase(std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [surface]
+                       (std::unique_ptr<WaylandSurface>& s){ return surface == s.get();}), mSurfacesList.end());
     }
 
 private:

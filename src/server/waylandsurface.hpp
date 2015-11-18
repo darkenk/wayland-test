@@ -19,20 +19,27 @@ public:
     wl_resource* callbackDone;
     bool isReady;
 };
-
+template<class T>
+class DestroyListener {
+public:
+    virtual ~DestroyListener() {}
+    virtual void notify(T* obj) = 0;
+};
 
 class WaylandSurface
 {
 public:
-    WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id):
-        mX(0), mY(0) {
+    WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id,
+                   DestroyListener<WaylandSurface>* listener = nullptr):
+        mX(0), mY(0), mDestroyListener(listener) {
+        LOGVP("Create surface id: %d", id);
         mResource = wl_resource_create(client, &wl_surface_interface,
                                        wl_resource_get_version(resource), id);
         if (not mResource) {
             wl_resource_post_no_memory(resource);
             return;
         }
-        wl_resource_set_implementation(mResource, &sInterface, this, nullptr);
+        wl_resource_set_implementation(mResource, &sInterface, this, hookDestroy);
         mClient = client;
         mFront = std::make_unique<SurfaceState>();
         mBack = std::make_unique<SurfaceState>();
@@ -141,9 +148,16 @@ private:
     int mX;
     int mY;
     std::unique_ptr<WaylandShellSurface> mShellSurface;
+    DestroyListener<WaylandSurface>* mDestroyListener;
 
     void swapBuffers() {
         mFront.swap(mBack);
+    }
+
+    void destroy() {
+        if (mDestroyListener) {
+            mDestroyListener->notify(this);
+        }
     }
 
     static void surfaceDestroy(wl_client* /*client*/, wl_resource* resource) {
@@ -180,6 +194,11 @@ private:
     static void hookSurfaceCommit(wl_client* client, wl_resource* resource) {
         LOGVP();
         getSurface(resource)->surfaceCommit(client, resource);
+    }
+
+    static void hookDestroy(wl_resource* resource) {
+        LOGVP();
+        getSurface(resource)->destroy();
     }
 
     static void surfaceSetBufferTransform(wl_client* /*client*/, wl_resource* /*resource*/, int /*transform*/) {
