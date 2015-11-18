@@ -147,11 +147,24 @@ private:
             posX = 0;
         }
         int32_t offsetDst = (posY * mDisplayWidth + posX) * BYTES_PER_PIXEL;
-
         for (int32_t y = posY; y < nrOfLines; y++) {
-            std::memcpy(mDisplayBuffer.get() + offsetDst, data + offsetSrc, lineSize);
+            blitLine(mDisplayBuffer.get() + offsetDst, data + offsetSrc, lineSize);
             offsetDst += mDisplayWidth * BYTES_PER_PIXEL;
             offsetSrc += w * BYTES_PER_PIXEL;
+        }
+    }
+
+    void blitLine(uint8_t* dst, uint8_t* src, uint32_t size) {
+        for (uint32_t i = 0; i < size; i += 4) {
+            alphaBlending(dst + i, src + i);
+        }
+    }
+
+    void alphaBlending(u_int8_t* bg, u_int8_t* fg) {
+        float alphaBg = (255 - *(fg + 3))/255.f;
+        float alphaFg = 1.f - alphaBg;
+        for (int i = 0; i < 3; i++) {
+            bg[i] = static_cast<u_int8_t>(bg[i] * alphaBg + fg[i] * alphaFg);
         }
     }
 };

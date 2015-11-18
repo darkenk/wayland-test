@@ -10,7 +10,8 @@
 class WaylandPointer
 {
 public:
-    WaylandPointer(wl_client* client, wl_resource* resource, uint32_t id) {
+    WaylandPointer(wl_client* client, wl_resource* resource, uint32_t id) :
+        mResource(nullptr), mSurface(nullptr), mHotspotX(0), mHotspotY(0) {
         mResource = wl_resource_create(client, &wl_pointer_interface,
                                        wl_resource_get_version(resource), id);
         if (not mResource) {
@@ -24,18 +25,23 @@ public:
         if (not mSurface) {
             return;
         }
-        mSurface->setX(x);
-        mSurface->setY(y);
+        mSurface->setX(x - mHotspotX);
+        mSurface->setY(y - mHotspotY);
     }
 
 private:
     static struct wl_pointer_interface sInterface;
     wl_resource* mResource;
     WaylandSurface* mSurface;
+    int32_t mHotspotX;
+    int32_t mHotspotY;
 
     void setCursor(wl_client* /*client*/, wl_resource* /*resource*/, uint32_t /*serial*/,
-                   wl_resource* surface, int32_t /*hotspot_x*/, int32_t /*hotspot_y*/) {
+                   wl_resource* surface, int32_t hotspotX, int32_t hotspotY) {
         mSurface = reinterpret_cast<WaylandSurface*>(wl_resource_get_user_data(surface));
+        mHotspotX = hotspotX;
+        mHotspotY = hotspotY;
+
     }
 
     static void hookSetCursor(wl_client* client, wl_resource* resource, uint32_t serial,
