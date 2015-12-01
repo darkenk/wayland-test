@@ -3,7 +3,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc99-extensions"
 
-struct wl_shell_interface WaylandShell::sInterface = {
+const struct wl_shell_interface WaylandShell::sInterface = {
     .get_shell_surface = hookGetShellSurface
 };
 

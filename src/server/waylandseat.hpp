@@ -14,23 +14,11 @@ public:
     virtual ~PointerListener() {}
 };
 
-class WaylandSeat : public PointerListener
+class WaylandSeat : public PointerListener,
+        public WaylandGlobalObject<WaylandSeat, wl_seat_interface, struct wl_seat_interface>
 {
 public:
-    WaylandSeat() {}
-
-    void bind(wl_client* client, uint32_t version, uint32_t id) {
-        LOGVP();
-        wl_resource* resource = wl_resource_create(client, &wl_seat_interface, version, id);
-        if (not resource) {
-            wl_client_post_no_memory(client);
-            return;
-        }
-        wl_resource_set_implementation(resource, &sInterface, this, nullptr);
-
-        wl_seat_send_capabilities(resource, WL_SEAT_CAPABILITY_POINTER);
-        wl_seat_send_name(resource, "DK_seat");
-    }
+    WaylandSeat(wl_display* display): WaylandGlobalObject(display) {}
 
     void move(int x, int y) {
         for (auto& p : mPointerList) {
@@ -38,8 +26,14 @@ public:
         }
     }
 
+protected:
+    static const struct wl_seat_interface* getInterface() {
+        return &sInterface;
+    }
+
 private:
-    static struct wl_seat_interface sInterface;
+    static const struct wl_seat_interface sInterface;
+    friend WaylandGlobalObject<WaylandSeat, wl_seat_interface, struct wl_seat_interface>;
     std::vector<std::unique_ptr<WaylandPointer>> mPointerList;
 
     void getPointer(wl_client* client, wl_resource* resource, uint32_t id) {

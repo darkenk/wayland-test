@@ -6,24 +6,24 @@
 #include "../utils/make_unique.hpp"
 #include "waylandshellsurface.hpp"
 #include "waylandsurface.hpp"
+#include "waylandglobalobject.hpp"
 
-class WaylandShell
+class WaylandShell : public WaylandGlobalObject<WaylandShell, wl_shell_interface,
+        struct wl_shell_interface>
 {
 public:
-    WaylandShell() {}
+    WaylandShell(wl_display* display): WaylandGlobalObject(display) {
 
-    void bind(wl_client* client, uint32_t version, uint32_t id) {
-        LOGVP();
-        wl_resource* resource = wl_resource_create(client, &wl_shell_interface, version, id);
-        if (not resource) {
-            wl_client_post_no_memory(client);
-            return;
-        }
-        wl_resource_set_implementation(resource, &sInterface, this, nullptr);
+    }
+
+protected:
+    static const struct wl_shell_interface* getInterface() {
+        return &sInterface;
     }
 
 private:
-    static struct wl_shell_interface sInterface;
+    const static struct wl_shell_interface sInterface;
+    friend WaylandGlobalObject<WaylandShell, wl_shell_interface, struct wl_shell_interface>;
 
     void getShellSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id,
                          wl_resource* surface) {
@@ -34,7 +34,7 @@ private:
 
     static void hookGetShellSurface(wl_client* client, wl_resource* resource, uint32_t id,
                              wl_resource* surface) {
-        WaylandShell* ws = reinterpret_cast<WaylandShell*>(wl_resource_get_user_data(resource));
+        WaylandShell* ws = getThis(resource);
         ws->getShellSurface(client, resource, id, surface);
     }
 };
