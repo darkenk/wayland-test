@@ -3,7 +3,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc99-extensions"
 
-struct wl_compositor_interface WaylandCompositor::sInterface = {
+const struct wl_compositor_interface WaylandCompositor::sInterface = {
     .create_surface = WaylandCompositor::hookCreateSurface,
     .create_region = WaylandCompositor::hookCreateRegion
 };

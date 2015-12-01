@@ -25,30 +25,12 @@ public:
         const char* socketName = wl_display_add_socket_auto(mDisplay);
         LOGVP("Socket Name %s", socketName);
 
-        mCompositor = std::make_unique<WaylandCompositor>(mDisplay, mBackend);
-        if (not wl_global_create(mDisplay, &wl_compositor_interface, 3, mCompositor.get(),
-                                 WaylandServer::hookBind<WaylandCompositor>)) {
-            throw std::exception();
-        }
+        FactoryWaylandGlobalObject f(mDisplay);
+        mCompositor = f.create<WaylandCompositor>(mDisplay, mBackend);
+        mShell = f.create<WaylandShell>();
+        mOutput = f.create<WaylandOutput>();
+        mSeat = f.create<WaylandSeat>();
         wl_display_init_shm(mDisplay);
-
-        mShell = std::make_unique<WaylandShell>();
-        if (not wl_global_create(mDisplay, &wl_shell_interface, 1, mShell.get(),
-                                 WaylandServer::hookBind<WaylandShell>)) {
-            throw std::exception();
-        }
-
-        mOutput = std::make_unique<WaylandOutput>();
-        if (not wl_global_create(mDisplay, &wl_output_interface, 1, mOutput.get(),
-                                 WaylandServer::hookBind<WaylandOutput>)) {
-            throw std::exception();
-        }
-
-        mSeat = std::make_shared<WaylandSeat>();
-        if (not wl_global_create(mDisplay, &wl_seat_interface, 1, mSeat.get(),
-                                 WaylandServer::hookBind<WaylandSeat>)) {
-            throw std::exception();
-        }
         mBackend->setPointerListener(std::static_pointer_cast<PointerListener>(mSeat));
     }
 
@@ -70,12 +52,6 @@ private:
     std::unique_ptr<WaylandShell> mShell;
     std::unique_ptr<WaylandOutput> mOutput;
     std::shared_ptr<WaylandSeat> mSeat;
-
-    template<class T>
-    static void hookBind(wl_client* client, void* data, uint32_t version, uint32_t id) {
-        T* object = reinterpret_cast<T*>(data);
-        object->bind(client, version, id);
-    }
 };
 
 #endif // WAYLANDSERVER_HPP

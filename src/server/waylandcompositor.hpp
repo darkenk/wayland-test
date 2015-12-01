@@ -10,11 +10,14 @@
 #include "../utils/make_unique.hpp"
 #include "waylandsurface.hpp"
 #include "waylandregion.hpp"
+#include "waylandglobalobject.hpp"
 
-class WaylandCompositor : public DestroyListener<WaylandSurface>
+class WaylandCompositor : public WaylandGlobalObject<WaylandCompositor, wl_compositor_interface, struct wl_compositor_interface>,
+        public DestroyListener<WaylandSurface>
 {
 public:
-    WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output) {
+    WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output):
+        WaylandGlobalObject(&sInterface) {
         mOutput = output;
         mDisplayWidth = mOutput->getWidth();
         mDisplayHeight = mOutput->getHeight();
@@ -75,24 +78,20 @@ public:
         }
     }
 
-    void bind(wl_client* client, uint32_t version, uint32_t id) {
-        LOGVP();
-        wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
-        if (not resource) {
-            wl_client_post_no_memory(client);
-            return;
-        }
-        wl_resource_set_implementation(resource, &sInterface, this,
-                                       WaylandCompositor::hookClientDisconnects);
-    }
-
     void notify(WaylandSurface* surface) {
         mSurfacesList.erase(std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [surface]
                        (std::unique_ptr<WaylandSurface>& s){ return surface == s.get();}), mSurfacesList.end());
     }
 
+protected:
+    virtual void clientDisconnects(wl_client* client) {
+        LOGVP();
+        std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [client]
+                       (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
+    }
+
 private:
-    static struct wl_compositor_interface sInterface;
+    static const struct wl_compositor_interface sInterface;
     std::vector<std::unique_ptr<WaylandSurface>> mSurfacesList;
     wl_event_source* mRepaintTimer;
     std::shared_ptr<X11Backend> mOutput;
@@ -120,18 +119,6 @@ private:
     static int hookRepaintHandler(void* data) {
         WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(data);
         return wc->repaint();
-    }
-
-    static void hookClientDisconnects(struct wl_resource *resource) {
-        WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(
-                    wl_resource_get_user_data(resource));
-        wc->clientDisconnects(wl_resource_get_client(resource));
-    }
-
-    void clientDisconnects(wl_client* client) {
-        LOGVP();
-        std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [client]
-                       (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
     }
 
     void clearDisplay() {
