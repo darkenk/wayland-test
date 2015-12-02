@@ -30,8 +30,8 @@ private:
     static const struct wl_seat_interface sInterface;
     std::vector<std::unique_ptr<WaylandPointer>> mPointerList;
 
-    void getPointer(wl_client* client, wl_resource* resource, uint32_t id) {
-        mPointerList.push_back(std::make_unique<WaylandPointer>(client, resource, id));
+    void getPointer(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
+        mPointerList.push_back(std::make_unique<WaylandPointer>(client, id));
     }
 
     static void hookGetPointer(wl_client* client, wl_resource* resource, uint32_t id) {

@@ -3,18 +3,17 @@
 
 #include <wayland-server.h>
 #include "../utils/logger.hpp"
+#include "waylandresource.hpp"
 
-class WaylandRegion
+class WaylandRegion : public WaylandResource<WaylandRegion, wl_region_interface,
+        struct wl_region_interface>
 {
 public:
-    WaylandRegion(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
-        mResource = wl_resource_create(client, &wl_region_interface, 1, id);
-        wl_resource_set_implementation(mResource, &sInterface, this, nullptr);
+    WaylandRegion(wl_client* client, uint32_t id): WaylandResource(this, &sInterface, client, id) {
     }
 
 private:
     static struct wl_region_interface sInterface;
-    wl_resource* mResource;
 
     static void hookRegionDestroy(wl_client* /*client*/, wl_resource* resource) {
         LOGVP();

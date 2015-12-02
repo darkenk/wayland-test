@@ -6,19 +6,15 @@
 #include "../utils/make_unique.hpp"
 #include <memory>
 #include "waylandshell.hpp"
+#include "waylandresource.hpp"
 
-class WaylandPointer
+class WaylandPointer : public WaylandResource<WaylandPointer, wl_pointer_interface,
+        struct wl_pointer_interface>
 {
 public:
-    WaylandPointer(wl_client* client, wl_resource* resource, uint32_t id) :
-        mResource(nullptr), mSurface(nullptr), mHotspotX(0), mHotspotY(0) {
-        mResource = wl_resource_create(client, &wl_pointer_interface,
-                                       wl_resource_get_version(resource), id);
-        if (not mResource) {
-            wl_client_post_no_memory(client);
-            return;
-        }
-        wl_resource_set_implementation(mResource, &sInterface, this, nullptr);
+    WaylandPointer(wl_client* client, uint32_t id) :
+        WaylandResource(this, &sInterface, client, id),
+        mSurface(nullptr), mHotspotX(0), mHotspotY(0) {
     }
 
     void move(int x, int y) {
@@ -31,7 +27,6 @@ public:
 
 private:
     static struct wl_pointer_interface sInterface;
-    wl_resource* mResource;
     WaylandSurface* mSurface;
     int32_t mHotspotX;
     int32_t mHotspotY;

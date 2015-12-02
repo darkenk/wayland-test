@@ -12,8 +12,8 @@
 #include "waylandregion.hpp"
 #include "waylandglobalobject.hpp"
 
-class WaylandCompositor : public WaylandGlobalObject<WaylandCompositor, wl_compositor_interface, struct wl_compositor_interface>,
-        public DestroyListener<WaylandSurface>
+class WaylandCompositor : public WaylandGlobalObject<WaylandCompositor, wl_compositor_interface,
+        struct wl_compositor_interface>, public DestroyListener<WaylandSurface>
 {
 public:
     WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output):
@@ -32,13 +32,13 @@ public:
         free(mRepaintTimer);
     }
 
-    void createSurface(wl_client* client, wl_resource* resource, uint32_t id) {
-        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, resource, id, this));
+    void createSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
+        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, id, this));
     }
 
-    void createRegion(wl_client* client, wl_resource* resource, uint32_t id) {
+    void createRegion(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
         LOGVP("Regions are not used :(");
-        mRegions.push_back(std::make_unique<WaylandRegion>(client, resource, id));
+        mRegions.push_back(std::make_unique<WaylandRegion>(client, id));
     }
 
     int repaint() {

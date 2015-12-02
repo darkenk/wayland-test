@@ -7,6 +7,7 @@
 #include "../utils/logger.hpp"
 #include "../utils/make_unique.hpp"
 #include "waylandshellsurface.hpp"
+#include "waylandresource.hpp"
 
 class SurfaceState
 {
@@ -26,20 +27,14 @@ public:
     virtual void notify(T* obj) = 0;
 };
 
-class WaylandSurface
+class WaylandSurface : public WaylandResource<WaylandSurface, wl_surface_interface,
+        struct wl_surface_interface>
 {
 public:
-    WaylandSurface(wl_client* client, wl_resource* resource, uint32_t id,
-                   DestroyListener<WaylandSurface>* listener = nullptr):
+    WaylandSurface(wl_client* client, uint32_t id, DestroyListener<WaylandSurface>* listener = nullptr):
+        WaylandResource(this, &sInterface, client, id),
         mX(0), mY(0), mDestroyListener(listener) {
         LOGVP("Create surface id: %d", id);
-        mResource = wl_resource_create(client, &wl_surface_interface,
-                                       wl_resource_get_version(resource), id);
-        if (not mResource) {
-            wl_resource_post_no_memory(resource);
-            return;
-        }
-        wl_resource_set_implementation(mResource, &sInterface, this, hookDestroy);
         mClient = client;
         mFront = std::make_unique<SurfaceState>();
         mBack = std::make_unique<SurfaceState>();
@@ -139,7 +134,6 @@ public:
 
 private:
     static struct wl_surface_interface sInterface;
-    wl_resource* mResource;
     std::unique_ptr<SurfaceState> mFront;
     std::unique_ptr<SurfaceState> mBack;
     uint32_t mBuffersFilled = 0;
@@ -168,7 +162,7 @@ private:
     static void hookSurfaceAttach(wl_client* client, wl_resource* resource, wl_resource* buffer,
                               int32_t sx, int32_t sy) {
         LOGVP();
-        getSurface(resource)->surfaceAttach(client, resource, buffer, sx, sy);
+        getThis(resource)->surfaceAttach(client, resource, buffer, sx, sy);
     }
 
     static void surfaceDamage(wl_client* /*client*/, wl_resource* /*resource*/, int32_t /*x*/, int32_t /*y*/,
@@ -178,7 +172,7 @@ private:
 
     static void hookSurfaceFrame(wl_client* client, wl_resource* resource, uint32_t callback) {
         LOGVP();
-        getSurface(resource)->surfaceFrame(client, resource, callback);
+        getThis(resource)->surfaceFrame(client, resource, callback);
     }
 
     static void surfaceSetOpaqueRegion(wl_client* /*client*/, wl_resource* /*resource*/,
@@ -193,12 +187,7 @@ private:
 
     static void hookSurfaceCommit(wl_client* client, wl_resource* resource) {
         LOGVP();
-        getSurface(resource)->surfaceCommit(client, resource);
-    }
-
-    static void hookDestroy(wl_resource* resource) {
-        LOGVP();
-        getSurface(resource)->destroy();
+        getThis(resource)->surfaceCommit(client, resource);
     }
 
     static void surfaceSetBufferTransform(wl_client* /*client*/, wl_resource* /*resource*/, int /*transform*/) {
@@ -207,10 +196,6 @@ private:
 
     static void surfaceSetBufferScale(wl_client* /*client*/, wl_resource* /*resource*/, int32_t /*scale*/) {
         LOGVP();
-    }
-
-    static inline WaylandSurface* getSurface(wl_resource* resource) {
-        return reinterpret_cast<WaylandSurface*>(wl_resource_get_user_data(resource));
     }
 };
 

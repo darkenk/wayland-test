@@ -2,13 +2,13 @@
 #define WAYLANDSHELLSURFACE_HPP
 
 #include <wayland-server.h>
+#include "waylandresource.hpp"
 
-class WaylandShellSurface
+class WaylandShellSurface : public WaylandResource<WaylandShellSurface, wl_shell_surface_interface,
+        struct wl_shell_surface_interface>
 {
 public:
-    WaylandShellSurface(wl_client* client, uint32_t id) {
-        wl_resource* resource = wl_resource_create(client, &wl_shell_surface_interface, 1, id);
-        wl_resource_set_implementation(resource, &sInterface, this, nullptr);
+    WaylandShellSurface(wl_client* client, uint32_t id): WaylandResource(this, &sInterface, client, id) {
     }
 
 private:
