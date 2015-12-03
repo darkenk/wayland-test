@@ -1,44 +1,32 @@
-#ifndef WAYLANDCOMPOSITOR_HPP
-#define WAYLANDCOMPOSITOR_HPP
+#ifndef COMPOSITOR_HPP
+#define COMPOSITOR_HPP
 
-#include <wayland-server.h>
+#include "wrapper/waylandcompositor.hpp"
 #include <memory>
 #include <vector>
 #include <algorithm>
 #include <cstring>
-#include "x11backend.hpp"
+#include "backend/x11backend.hpp"
 #include "../utils/make_unique.hpp"
-#include "waylandsurface.hpp"
-#include "waylandregion.hpp"
-#include "waylandglobalobject.hpp"
+#include "surface.hpp"
+#include "wrapper/waylandregion.hpp"
 
-class WaylandCompositor : public WaylandGlobalObject<WaylandCompositor, wl_compositor_interface,
-        struct wl_compositor_interface>, public DestroyListener<WaylandSurface>
+class Compositor : public WaylandCompositor, public DestroyListener<Surface>
 {
 public:
-    WaylandCompositor(wl_display* display, std::shared_ptr<X11Backend> output):
-        WaylandGlobalObject(&sInterface) {
+    Compositor(wl_display* display, std::shared_ptr<X11Backend> output) {
         mOutput = output;
         mDisplayWidth = mOutput->getWidth();
         mDisplayHeight = mOutput->getHeight();
         // repaint handler
         wl_event_loop* loop = wl_display_get_event_loop(display);
-        mRepaintTimer = wl_event_loop_add_timer(loop, WaylandCompositor::hookRepaintHandler, this);
+        mRepaintTimer = wl_event_loop_add_timer(loop, hookRepaintHandler, this);
         wl_event_source_timer_update(mRepaintTimer, REPAINT_DELAY);
         mDisplayBuffer = std::make_unique<uint8_t[]>(mDisplayWidth * mDisplayHeight * 4);
     }
 
-    ~WaylandCompositor() {
+    ~Compositor() {
         free(mRepaintTimer);
-    }
-
-    void createSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
-        mSurfacesList.push_back(std::make_unique<WaylandSurface>(client, id, this));
-    }
-
-    void createRegion(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
-        LOGVP("Regions are not used :(");
-        mRegions.push_back(std::make_unique<WaylandRegion>(client, id));
     }
 
     int repaint() {
@@ -78,21 +66,32 @@ public:
         }
     }
 
-    void notify(WaylandSurface* surface) {
+    virtual void notify(Surface* surface) {
         mSurfacesList.erase(std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [surface]
-                       (std::unique_ptr<WaylandSurface>& s){ return surface == s.get();}), mSurfacesList.end());
+                       (std::unique_ptr<Surface>& s){ return surface == s.get();}), mSurfacesList.end());
     }
 
 protected:
     virtual void clientDisconnects(wl_client* client) {
         LOGVP();
         std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [client]
-                       (std::unique_ptr<WaylandSurface>& s){ return client == s->client();});
+                       (std::unique_ptr<Surface>& s){ return client == s->client();});
+    }
+
+    virtual void createSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
+        auto p = WaylandResourceFactory::create<Surface>(client, id, client, this);
+        mSurfacesList.push_back(std::unique_ptr<Surface>(p));
+    }
+
+    virtual void createRegion(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
+        LOGVP("Regions are not used :(");
+        auto p = WaylandResourceFactory::create<WaylandRegion>(client, id);
+        mRegions.push_back(std::unique_ptr<WaylandRegion>(p));
     }
 
 private:
     static const struct wl_compositor_interface sInterface;
-    std::vector<std::unique_ptr<WaylandSurface>> mSurfacesList;
+    std::vector<std::unique_ptr<Surface>> mSurfacesList;
     wl_event_source* mRepaintTimer;
     std::shared_ptr<X11Backend> mOutput;
     int32_t mDisplayWidth;
@@ -102,23 +101,10 @@ private:
     static constexpr int REPAINT_DELAY = 16;
     static constexpr int BYTES_PER_PIXEL = 4;
 
-    static void hookCreateSurface(wl_client* client, wl_resource* resource, uint32_t id) {
-        LOGVP();
-        WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(
-                    wl_resource_get_user_data(resource));
-        wc->createSurface(client, resource, id);
-    }
-
-    static void hookCreateRegion(wl_client* client, wl_resource* resource, uint32_t id) {
-        LOGVP();
-        WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(
-                    wl_resource_get_user_data(resource));
-        wc->createRegion(client, resource, id);
-    }
 
     static int hookRepaintHandler(void* data) {
-        WaylandCompositor* wc = reinterpret_cast<WaylandCompositor*>(data);
-        return wc->repaint();
+        auto p = reinterpret_cast<Compositor*>(data);
+        return p->repaint();
     }
 
     void clearDisplay() {
@@ -161,4 +147,4 @@ private:
     }
 };
 
-#endif // WAYLANDCOMPOSITOR_HPP
+#endif // COMPOSITOR_HPP

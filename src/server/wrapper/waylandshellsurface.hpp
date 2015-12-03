@@ -8,7 +8,7 @@ class WaylandShellSurface : public WaylandResource<WaylandShellSurface, wl_shell
         struct wl_shell_surface_interface>
 {
 public:
-    WaylandShellSurface(wl_client* client, uint32_t id): WaylandResource(this, &sInterface, client, id) {
+    WaylandShellSurface(): WaylandResource(&sInterface) {
     }
 
 private:

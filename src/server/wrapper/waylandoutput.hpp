@@ -2,7 +2,6 @@
 #define WAYLANDOUTPUT_HPP
 
 #include <wayland-server.h>
-#include "../utils/logger.hpp"
 #include "waylandglobalobject.hpp"
 
 class WaylandOutput: public WaylandGlobalObject<WaylandOutput,

@@ -4,7 +4,7 @@
 #pragma GCC diagnostic ignored "-Wc99-extensions"
 
 struct wl_surface_interface WaylandSurface::sInterface = {
-    .destroy = WaylandSurface::surfaceDestroy,
+    .destroy = WaylandSurface::hookSurfaceDestroy,
     .attach = WaylandSurface::hookSurfaceAttach,
     .damage = WaylandSurface::surfaceDamage,
     .frame = WaylandSurface::hookSurfaceFrame,

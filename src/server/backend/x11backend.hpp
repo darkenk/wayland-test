@@ -5,11 +5,11 @@
 #include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#include "../utils/exceptions.hpp"
-#include "../utils/logger.hpp"
+#include "../../utils/exceptions.hpp"
+#include "../../utils/logger.hpp"
 #include "wayland-server.h"
 #include <EGL/egl.h>
-#include "waylandseat.hpp"
+#include "../seat.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"

@@ -4,7 +4,7 @@
 #include <wayland-server.h>
 #include <stdexcept>
 #include <memory>
-#include "../utils/make_unique.hpp"
+#include "../../utils/make_unique.hpp"
 
 class FactoryWaylandGlobalObject
 {

@@ -5,11 +5,11 @@
 #include <exception>
 #include <memory>
 #include "../utils/make_unique.hpp"
-#include "x11backend.hpp"
-#include "waylandcompositor.hpp"
-#include "waylandshell.hpp"
-#include "waylandoutput.hpp"
-#include "waylandseat.hpp"
+#include "backend/x11backend.hpp"
+#include "compositor.hpp"
+#include "shell.hpp"
+#include "wrapper/waylandoutput.hpp"
+#include "seat.hpp"
 #include <utility>
 
 class WaylandServer
@@ -26,10 +26,10 @@ public:
         LOGVP("Socket Name %s", socketName);
 
         FactoryWaylandGlobalObject f(mDisplay);
-        mCompositor = f.create<WaylandCompositor>(mDisplay, mBackend);
-        mShell = f.create<WaylandShell>();
+        mCompositor = f.create<Compositor>(mDisplay, mBackend);
+        mShell = f.create<Shell>();
         mOutput = f.create<WaylandOutput>();
-        mSeat = f.create<WaylandSeat>();
+        mSeat = f.create<Seat>();
         wl_display_init_shm(mDisplay);
         mBackend->setPointerListener(std::static_pointer_cast<PointerListener>(mSeat));
     }
@@ -48,10 +48,10 @@ public:
 private:
     wl_display* mDisplay;
     std::shared_ptr<X11Backend> mBackend;
-    std::unique_ptr<WaylandCompositor> mCompositor;
-    std::unique_ptr<WaylandShell> mShell;
+    std::unique_ptr<Compositor> mCompositor;
+    std::unique_ptr<Shell> mShell;
     std::unique_ptr<WaylandOutput> mOutput;
-    std::shared_ptr<WaylandSeat> mSeat;
+    std::shared_ptr<Seat> mSeat;
 };
 
 #endif // WAYLANDSERVER_HPP

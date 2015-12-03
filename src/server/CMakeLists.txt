@@ -1,5 +1,9 @@
 project(wayland_server_test)
 aux_source_directory(. SRC)
+aux_source_directory(wrapper SRC_WRAPPER)
+aux_source_directory(backend SRC_BACKEND)
+
+set(SRC "${SRC};${SRC_WRAPPER};${SRC_BACKEND}")
 
 find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
 find_package(X11 REQUIRED)
