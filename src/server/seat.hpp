@@ -30,6 +30,10 @@ protected:
         mPointerList.push_back(std::unique_ptr<Pointer>(p));
     }
 
+    virtual void bind(wl_client* /*client*/, wl_resource* resource) {
+        wl_seat_send_capabilities(resource, wl_seat_capability::WL_SEAT_CAPABILITY_POINTER);
+    }
+
 private:
     std::vector<std::unique_ptr<Pointer>> mPointerList;
 };

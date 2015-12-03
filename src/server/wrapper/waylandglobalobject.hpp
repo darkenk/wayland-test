@@ -37,7 +37,7 @@ public:
 
 protected:
     virtual void clientDisconnects(wl_client* /*client*/) {}
-    virtual void bind(wl_client* /*client*/) { }
+    virtual void bind(wl_client* /*client*/, wl_resource* /*resource*/) { }
 
     static T* getThis(wl_resource* resource) {
         return reinterpret_cast<T*>(wl_resource_get_user_data(resource));
@@ -56,7 +56,7 @@ private:
         }
         WaylandGlobalObject* object = reinterpret_cast<WaylandGlobalObject*>(data);
         wl_resource_set_implementation(resource, object->sInterface, data, hookClientDisconects);
-        object->bind(client);
+        object->bind(client, resource);
     }
 
     static void hookClientDisconects(wl_resource* resource) {
