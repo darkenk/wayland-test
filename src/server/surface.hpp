@@ -1,15 +1,15 @@
 #ifndef SURFACE_HPP
 #define SURFACE_HPP
 
-#include "wrapper/waylandsurface.hpp"
-#include "../utils/make_unique.hpp"
 #include "../utils/logger.hpp"
+#include "../utils/make_unique.hpp"
 #include "shellsurface.hpp"
+#include "wrapper/waylandsurface.hpp"
 
 class SurfaceState
 {
 public:
-    SurfaceState(): buffer(nullptr), x(0), y(0), callbackDone(nullptr), isReady(false) {}
+    SurfaceState() : buffer(nullptr), x(0), y(0), callbackDone(nullptr), isReady(false) {}
 
     wl_resource* buffer;
     int32_t x;
@@ -18,8 +18,8 @@ public:
     bool isReady;
 };
 
-template<class T>
-class DestroyListener {
+template <class T> class DestroyListener
+{
 public:
     virtual ~DestroyListener() {}
     virtual void notify(T* obj) = 0;
@@ -28,8 +28,8 @@ public:
 class Surface : public WaylandSurface
 {
 public:
-    Surface(wl_client* client, DestroyListener<Surface>* listener = nullptr):
-        mX(0), mY(0), mDestroyListener(listener) {
+    Surface(wl_client* client, DestroyListener<Surface>* listener = nullptr)
+        : mX(0), mY(0), mDestroyListener(listener) {
         mClient = client;
         mFront = std::make_unique<SurfaceState>();
         mBack = std::make_unique<SurfaceState>();
@@ -108,12 +108,11 @@ protected:
                 mBack->isReady = false;
                 mBuffersFilled--;
             }
-
         }
     }
 
-    virtual void surfaceAttach(wl_client* /*client*/, wl_resource* /*resource*/, wl_resource* buffer,
-                       int32_t x, int32_t y) {
+    virtual void surfaceAttach(wl_client* /*client*/, wl_resource* /*resource*/,
+                               wl_resource* buffer, int32_t x, int32_t y) {
         wl_shm_buffer* buf = wl_shm_buffer_get(buffer);
         if (not buf) {
             LOGVP("Why buffer is empty?");
@@ -132,7 +131,7 @@ private:
     std::unique_ptr<SurfaceState> mFront;
     std::unique_ptr<SurfaceState> mBack;
     uint32_t mBuffersFilled = 0;
-    static constexpr uint32_t MAX_BUFFERS  = 2;
+    static constexpr uint32_t MAX_BUFFERS = 2;
     wl_client* mClient;
     int mX;
     int mY;
@@ -150,4 +149,4 @@ private:
     }
 };
 
-#endif // SURFACE_HPP
+#endif  // SURFACE_HPP

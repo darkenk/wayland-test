@@ -6,7 +6,6 @@
 struct wl_region_interface WaylandRegion::sInterface = {
     .destroy = WaylandRegion::hookRegionDestroy,
     .add = WaylandRegion::hookRegionAdd,
-    .subtract = WaylandRegion::hookRegionSubtract
-};
+    .subtract = WaylandRegion::hookRegionSubtract};
 
 #pragma GCC diagnostic pop

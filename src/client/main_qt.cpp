@@ -1,8 +1,7 @@
 #include <QApplication>
 #include <QWidget>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     qputenv("QT_QPA_PLATFORM", "wayland");
     QApplication app(argc, argv);
     QWidget window;

@@ -1,13 +1,13 @@
 #ifndef WAYLANDRESOURCE_HPP
 #define WAYLANDRESOURCE_HPP
 
-#include <wayland-server.h>
 #include <stdexcept>
+#include <wayland-server.h>
 
 class WaylandResourceFactory
 {
 public:
-    template<class T, typename... Args>
+    template <class T, typename... Args>
     static T* create(wl_client* client, uint32_t id, Args&&... args) {
         auto p = new T(std::forward<Args>(args)...);
         if (auto r = wl_resource_create(client, &T::interface, T::interface.version, id)) {
@@ -21,12 +21,10 @@ public:
     }
 };
 
-template<class T, const wl_interface& INTERFACE, typename S>
-class WaylandResource
+template <class T, const wl_interface& INTERFACE, typename S> class WaylandResource
 {
 public:
-    WaylandResource(const S* implementedInterface):
-        mResource(nullptr) {
+    WaylandResource(const S* implementedInterface) : mResource(nullptr) {
         sImplInterface = implementedInterface;
     }
     virtual ~WaylandResource() {
@@ -61,7 +59,7 @@ private:
     }
 };
 
-template<class T, const wl_interface& INTERFACE, typename S>
+template <class T, const wl_interface& INTERFACE, typename S>
 const S* WaylandResource<T, INTERFACE, S>::sImplInterface = nullptr;
 
-#endif // WAYLANDRESOURCE_HPP
+#endif  // WAYLANDRESOURCE_HPP

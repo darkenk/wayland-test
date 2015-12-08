@@ -12,7 +12,6 @@ struct wl_surface_interface WaylandSurface::sInterface = {
     .set_input_region = WaylandSurface::surfaceSetInputRegion,
     .commit = WaylandSurface::hookSurfaceCommit,
     .set_buffer_transform = WaylandSurface::surfaceSetBufferTransform,
-    .set_buffer_scale = WaylandSurface::surfaceSetBufferScale
-};
+    .set_buffer_scale = WaylandSurface::surfaceSetBufferScale};
 
 #pragma GCC diagnostic pop

@@ -18,6 +18,8 @@ set(PROJECT_NAME opengl_example)
 
 add_executable(${PROJECT_NAME} test2.cpp)
 
+add_definitions(-DWL_EGL_PLATFORM)
+
 target_link_libraries(${PROJECT_NAME}
     ${Wayland_LIBRARIES}
     dk_utils
@@ -25,6 +27,7 @@ target_link_libraries(${PROJECT_NAME}
     GLESv2
     glapi
 )
+
 
 set(PROJECT_NAME qt_example)
 

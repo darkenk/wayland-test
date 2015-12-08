@@ -1,15 +1,15 @@
 #ifndef COMPOSITOR_HPP
 #define COMPOSITOR_HPP
 
+#include "../utils/make_unique.hpp"
+#include "backend/x11backend.hpp"
+#include "surface.hpp"
 #include "wrapper/waylandcompositor.hpp"
-#include <memory>
-#include <vector>
+#include "wrapper/waylandregion.hpp"
 #include <algorithm>
 #include <cstring>
-#include "backend/x11backend.hpp"
-#include "../utils/make_unique.hpp"
-#include "surface.hpp"
-#include "wrapper/waylandregion.hpp"
+#include <memory>
+#include <vector>
 
 class Compositor : public WaylandCompositor, public DestroyListener<Surface>
 {
@@ -67,15 +67,17 @@ public:
     }
 
     virtual void notify(Surface* surface) {
-        mSurfacesList.erase(std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [surface]
-                       (std::unique_ptr<Surface>& s){ return surface == s.get();}), mSurfacesList.end());
+        mSurfacesList.erase(
+            std::remove_if(mSurfacesList.begin(), mSurfacesList.end(),
+                           [surface](std::unique_ptr<Surface>& s) { return surface == s.get(); }),
+            mSurfacesList.end());
     }
 
 protected:
     virtual void clientDisconnects(wl_client* client) {
         LOGVP();
-        std::remove_if(mSurfacesList.begin(), mSurfacesList.end(), [client]
-                       (std::unique_ptr<Surface>& s){ return client == s->client();});
+        std::remove_if(mSurfacesList.begin(), mSurfacesList.end(),
+                       [client](std::unique_ptr<Surface>& s) { return client == s->client(); });
     }
 
     virtual void createSurface(wl_client* client, wl_resource* /*resource*/, uint32_t id) {
@@ -101,7 +103,6 @@ private:
     static constexpr int REPAINT_DELAY = 16;
     static constexpr int BYTES_PER_PIXEL = 4;
 
-
     static int hookRepaintHandler(void* data) {
         auto p = reinterpret_cast<Compositor*>(data);
         return p->repaint();
@@ -119,7 +120,7 @@ private:
         lineSize = w < lineSize ? w * BYTES_PER_PIXEL : lineSize * BYTES_PER_PIXEL;
         int32_t nrOfLines = (posY + h) < mDisplayHeight ? (posY + h) : mDisplayHeight;
         int32_t offsetSrc = 0;
-        if (posX < 0 ) {
+        if (posX < 0) {
             offsetSrc -= posX * BYTES_PER_PIXEL;
             lineSize -= offsetSrc;
             posX = 0;
@@ -139,7 +140,7 @@ private:
     }
 
     void alphaBlending(u_int8_t* bg, u_int8_t* fg) {
-        float alphaBg = (255 - *(fg + 3))/255.f;
+        float alphaBg = (255 - *(fg + 3)) / 255.f;
         float alphaFg = 1.f - alphaBg;
         for (int i = 0; i < 3; i++) {
             bg[i] = static_cast<u_int8_t>(bg[i] * alphaBg + fg[i] * alphaFg);
@@ -147,4 +148,4 @@ private:
     }
 };
 
-#endif // COMPOSITOR_HPP
+#endif  // COMPOSITOR_HPP

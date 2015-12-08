@@ -1,12 +1,12 @@
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wayland-client.h>
-#include <wayland-server.h>
 #include <wayland-client-protocol.h>
+#include <wayland-client.h>
 #include <wayland-egl.h>
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
+#include <wayland-server.h>
 
 static struct wl_display *display = NULL;
 static struct wl_compositor *compositor = NULL;
@@ -21,98 +21,77 @@ static EGLConfig egl_conf;
 static EGLSurface egl_surface;
 static EGLContext egl_context;
 
-static void
-global_registry_handler(void */*data*/, struct wl_registry *registry, uint32_t id,
-                        const char *interface, uint32_t /*version*/)
-{
+static void global_registry_handler(void * /*data*/, struct wl_registry *registry, uint32_t id,
+                                    const char *interface, uint32_t /*version*/) {
     printf("Got a registry event for %s id %d\n", interface, id);
     if (strcmp(interface, "wl_compositor") == 0) {
-        compositor = reinterpret_cast<wl_compositor*>(wl_registry_bind(registry,
-                                                      id,
-                                                      &wl_compositor_interface,
-                                                      1));
+        compositor = reinterpret_cast<wl_compositor *>(
+            wl_registry_bind(registry, id, &wl_compositor_interface, 1));
     } else if (strcmp(interface, "wl_shell") == 0) {
-        shell = reinterpret_cast<wl_shell*>(wl_registry_bind(registry, id,
-                                            &wl_shell_interface, 1));
-
+        shell =
+            reinterpret_cast<wl_shell *>(wl_registry_bind(registry, id, &wl_shell_interface, 1));
     }
 }
 
-static void
-global_registry_remover(void */*data*/, struct wl_registry */*registry*/, uint32_t id)
-{
+static void global_registry_remover(void * /*data*/, struct wl_registry * /*registry*/,
+                                    uint32_t id) {
     printf("Got a registry losing event for %d\n", id);
 }
 
-static const struct wl_registry_listener registry_listener = {
-    global_registry_handler,
-    global_registry_remover
-};
+static const struct wl_registry_listener registry_listener = {global_registry_handler,
+                                                              global_registry_remover};
 
-static void
-create_opaque_region() {
-	region = wl_compositor_create_region(compositor);
-	wl_region_add(region, 0, 0,
-				  480,
-				  360);
-	wl_surface_set_opaque_region(surface, region);
+static void create_opaque_region() {
+    region = wl_compositor_create_region(compositor);
+    wl_region_add(region, 0, 0, 480, 360);
+    wl_surface_set_opaque_region(surface, region);
 }
 
-static void
-create_window() {
+static void create_window() {
+    egl_window = wl_egl_window_create(surface, 480, 360);
+    if (egl_window == EGL_NO_SURFACE) {
+        fprintf(stderr, "Can't create egl window\n");
+        exit(1);
+    } else {
+        fprintf(stderr, "Created egl window\n");
+    }
 
-	egl_window = wl_egl_window_create(surface,
-									  480, 360);
-	if (egl_window == EGL_NO_SURFACE) {
-		fprintf(stderr, "Can't create egl window\n");
-		exit(1);
-	} else {
-		fprintf(stderr, "Created egl window\n");
-	}
+    egl_surface = eglCreateWindowSurface(egl_display, egl_conf, egl_window, nullptr);
 
-	egl_surface =
-			eglCreateWindowSurface(egl_display,
-								   egl_conf,
-								   egl_window, nullptr);
+    if (eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context)) {
+        fprintf(stderr, "Made current\n");
+    } else {
+        fprintf(stderr, "Made current failed\n");
+    }
 
-	if (eglMakeCurrent(egl_display, egl_surface,
-					   egl_surface, egl_context)) {
-		fprintf(stderr, "Made current\n");
-	} else {
-		fprintf(stderr, "Made current failed\n");
-	}
+    glClearColor(1.0, 1.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glFlush();
 
-
-glClearColor(1.0, 1.0, 0.0, 1.0);
-glClear(GL_COLOR_BUFFER_BIT);
-glFlush();
-
-
-	if (eglSwapBuffers(egl_display, egl_surface)) {
-		fprintf(stderr, "Swapped buffers\n");
-	} else {
-		fprintf(stderr, "Swapped buffers failed\n");
-	}
+    if (eglSwapBuffers(egl_display, egl_surface)) {
+        fprintf(stderr, "Swapped buffers\n");
+    } else {
+        fprintf(stderr, "Swapped buffers failed\n");
+    }
 }
 
-static void
-init_egl() {
+static void init_egl() {
     EGLint major, minor, count, n, size;
     EGLConfig *configs;
     int i;
-    EGLint config_attribs[] = {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_RED_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE, 8,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_NONE
-    };
+    EGLint config_attribs[] = {EGL_SURFACE_TYPE,
+                               EGL_WINDOW_BIT,
+                               EGL_RED_SIZE,
+                               8,
+                               EGL_GREEN_SIZE,
+                               8,
+                               EGL_BLUE_SIZE,
+                               8,
+                               EGL_RENDERABLE_TYPE,
+                               EGL_OPENGL_ES2_BIT,
+                               EGL_NONE};
 
-    static const EGLint context_attribs[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
+    static const EGLint context_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
 
     egl_display = eglGetDisplay(display);
     if (egl_display == EGL_NO_DISPLAY) {
@@ -131,35 +110,26 @@ init_egl() {
     eglGetConfigs(egl_display, nullptr, 0, &count);
     printf("EGL has %d configs\n", count);
 
-    configs = reinterpret_cast<EGLConfig*>(calloc(static_cast<size_t>(count), sizeof *configs));
+    configs = reinterpret_cast<EGLConfig *>(calloc(static_cast<size_t>(count), sizeof *configs));
 
-    eglChooseConfig(egl_display, config_attribs,
-                    configs, count, &n);
+    eglChooseConfig(egl_display, config_attribs, configs, count, &n);
 
     i = 0;
-//    for (i = 0; i < n; i++) {
-        eglGetConfigAttrib(egl_display,
-                           configs[i], EGL_BUFFER_SIZE, &size);
-        printf("Buffer size for config %d is %d\n", i, size);
-        eglGetConfigAttrib(egl_display,
-                           configs[i], EGL_RED_SIZE, &size);
-        printf("Red size for config %d is %d\n", i, size);
+    //    for (i = 0; i < n; i++) {
+    eglGetConfigAttrib(egl_display, configs[i], EGL_BUFFER_SIZE, &size);
+    printf("Buffer size for config %d is %d\n", i, size);
+    eglGetConfigAttrib(egl_display, configs[i], EGL_RED_SIZE, &size);
+    printf("Red size for config %d is %d\n", i, size);
 
-        // just choose the first one
-        egl_conf = configs[i];
-//        break;
-//    }
+    // just choose the first one
+    egl_conf = configs[i];
+    //        break;
+    //    }
 
-    egl_context =
-            eglCreateContext(egl_display,
-                             egl_conf,
-                             EGL_NO_CONTEXT, context_attribs);
-
+    egl_context = eglCreateContext(egl_display, egl_conf, EGL_NO_CONTEXT, context_attribs);
 }
 
-static void
-get_server_references(void) {
-
+static void get_server_references(void) {
     display = wl_display_connect(nullptr);
     if (not display) {
         fprintf(stderr, "Can't connect to display\n");
@@ -182,7 +152,6 @@ get_server_references(void) {
 }
 
 int main() {
-
     get_server_references();
 
     surface = wl_compositor_create_surface(compositor);

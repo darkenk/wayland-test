@@ -1,15 +1,14 @@
 #ifndef WAYLANDOUTPUT_HPP
 #define WAYLANDOUTPUT_HPP
 
-#include <wayland-server.h>
 #include "waylandglobalobject.hpp"
+#include <wayland-server.h>
 
-class WaylandOutput: public WaylandGlobalObject<WaylandOutput,
-        wl_output_interface, struct wl_output_interface>
+class WaylandOutput
+    : public WaylandGlobalObject<WaylandOutput, wl_output_interface, struct wl_output_interface>
 {
 public:
-    WaylandOutput(): WaylandGlobalObject(nullptr) { }
-
+    WaylandOutput() : WaylandGlobalObject(nullptr) {}
 };
 
-#endif // WAYLANDOUTPUT_HPP
+#endif  // WAYLANDOUTPUT_HPP

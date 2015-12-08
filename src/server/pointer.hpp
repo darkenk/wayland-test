@@ -6,7 +6,7 @@
 class Pointer : public WaylandPointer
 {
 public:
-    Pointer(): WaylandPointer() { }
+    Pointer() : WaylandPointer() {}
 
     void move(int x, int y) {
         if (not mSurface) {
@@ -18,7 +18,7 @@ public:
 
 protected:
     virtual void setCursor(wl_client* /*client*/, wl_resource* /*resource*/, uint32_t /*serial*/,
-                   wl_resource* surface, int32_t hotspotX, int32_t hotspotY) {
+                           wl_resource* surface, int32_t hotspotX, int32_t hotspotY) {
         mSurface = reinterpret_cast<Surface*>(wl_resource_get_user_data(surface));
         mHotspotX = hotspotX;
         mHotspotY = hotspotY;
@@ -30,4 +30,4 @@ private:
     int32_t mHotspotY;
 };
 
-#endif // POINTER_HPP
+#endif  // POINTER_HPP

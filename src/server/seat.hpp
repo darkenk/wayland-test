@@ -1,10 +1,10 @@
 #ifndef SEAT_HPP
 #define SEAT_HPP
 
-#include "wrapper/waylandseat.hpp"
-#include <vector>
 #include "pointer.hpp"
+#include "wrapper/waylandseat.hpp"
 #include <memory>
+#include <vector>
 
 class PointerListener
 {
@@ -38,4 +38,4 @@ private:
     std::vector<std::unique_ptr<Pointer>> mPointerList;
 };
 
-#endif // SEAT_HPP
+#endif  // SEAT_HPP

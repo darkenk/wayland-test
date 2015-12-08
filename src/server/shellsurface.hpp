@@ -8,7 +8,6 @@ class ShellSurface : public WaylandShellSurface
 public:
     ShellSurface() {}
     virtual ~ShellSurface() {}
-
 };
 
-#endif // SHELLSURFACE_HPP
+#endif  // SHELLSURFACE_HPP

@@ -5,7 +5,6 @@
 
 const struct wl_compositor_interface WaylandCompositor::sInterface = {
     .create_surface = WaylandCompositor::hookCreateSurface,
-    .create_region = WaylandCompositor::hookCreateRegion
-};
+    .create_region = WaylandCompositor::hookCreateRegion};
 
 #pragma GCC diagnostic pop

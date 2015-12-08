@@ -1,16 +1,16 @@
 #ifndef WAYLANDSERVER_HPP
 #define WAYLANDSERVER_HPP
 
-#include <wayland-server.h>
-#include <exception>
-#include <memory>
 #include "../utils/make_unique.hpp"
 #include "backend/x11backend.hpp"
 #include "compositor.hpp"
+#include "seat.hpp"
 #include "shell.hpp"
 #include "wrapper/waylandoutput.hpp"
-#include "seat.hpp"
+#include <exception>
+#include <memory>
 #include <utility>
+#include <wayland-server.h>
 
 class WaylandServer
 {
@@ -54,4 +54,4 @@ private:
     std::shared_ptr<Seat> mSeat;
 };
 
-#endif // WAYLANDSERVER_HPP
+#endif  // WAYLANDSERVER_HPP
