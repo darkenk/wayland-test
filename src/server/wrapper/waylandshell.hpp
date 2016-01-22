@@ -1,7 +1,7 @@
 #ifndef WAYLANDSHELL_HPP
 #define WAYLANDSHELL_HPP
 
-#include "../../utils/make_unique.hpp"
+#include "dk_utils/make_unique.hpp"
 #include "waylandglobalobject.hpp"
 #include "waylandshellsurface.hpp"
 #include "waylandsurface.hpp"

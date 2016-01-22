@@ -8,9 +8,12 @@ set(SRC "${SRC};${SRC_WRAPPER};${SRC_BACKEND}")
 find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
 find_package(X11 REQUIRED)
 
-include_directories(SYSTEM
-    ${Wayland_INCLUDE_DIRS}
-    ${X11_INCLUDE_DIR}
+message(warning ${DK_UTILS_INCLUDE_DIR})
+
+include_directories(
+    SYSTEM ${Wayland_INCLUDE_DIRS}
+    SYSTEM ${X11_INCLUDE_DIR}
+    ${DK_UTILS_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

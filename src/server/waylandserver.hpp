@@ -1,7 +1,7 @@
 #ifndef WAYLANDSERVER_HPP
 #define WAYLANDSERVER_HPP
 
-#include "../utils/make_unique.hpp"
+#include "dk_utils/make_unique.hpp"
 #include "backend/x11backend.hpp"
 #include "compositor.hpp"
 #include "seat.hpp"

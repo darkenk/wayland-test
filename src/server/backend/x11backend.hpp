@@ -1,8 +1,8 @@
 #ifndef X11BACKEND_HPP
 #define X11BACKEND_HPP
 
-#include "../../utils/exceptions.hpp"
-#include "../../utils/logger.hpp"
+#include "dk_utils/exceptions.hpp"
+#include "dk_utils/logger.hpp"
 #include "../seat.hpp"
 #include "wayland-server.h"
 #include <EGL/egl.h>
@@ -17,6 +17,7 @@
 class X11Backend
 {
 public:
+    using X11Exception = Exception<X11Backend>;
     X11Backend(uint32_t width, uint32_t height)
         : mWidth(width), mHeight(height), mWlDisplay(nullptr) {}
 
@@ -32,7 +33,7 @@ public:
         mWlDisplay = display;
         mDisplay = XOpenDisplay(nullptr);
         if (not mDisplay) {
-            Exception(__FUNCTION__);
+            X11Exception(__FUNCTION__);
         }
         mRoot = DefaultRootWindow(mDisplay);
         mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
@@ -136,7 +137,7 @@ private:
         mImage =
             XCreateImage(mDisplay, nullptr, sDepth, ZPixmap, 0, nullptr, mWidth, mHeight, 32, 0);
         if (not mImage) {
-            throw Exception("Can't create XImage");
+            throw X11Exception("Can't create XImage");
         }
     }
 

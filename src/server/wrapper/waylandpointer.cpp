@@ -1,9 +1,9 @@
 #include "waylandpointer.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc99-extensions"
+// clang-format off
+struct wl_pointer_interface WaylandPointer::sInterface = {
+    hookSetCursor,
+    hookRelease
+};
 
-struct wl_pointer_interface WaylandPointer::sInterface = {.set_cursor = hookSetCursor,
-                                                          .release = hookRelease};
-
-#pragma GCC diagnostic pop
+// clang-format on

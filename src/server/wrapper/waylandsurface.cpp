@@ -1,17 +1,16 @@
 #include "waylandsurface.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc99-extensions"
-
+// clang format off
 struct wl_surface_interface WaylandSurface::sInterface = {
-    .destroy = WaylandSurface::hookSurfaceDestroy,
-    .attach = WaylandSurface::hookSurfaceAttach,
-    .damage = WaylandSurface::surfaceDamage,
-    .frame = WaylandSurface::hookSurfaceFrame,
-    .set_opaque_region = WaylandSurface::surfaceSetOpaqueRegion,
-    .set_input_region = WaylandSurface::surfaceSetInputRegion,
-    .commit = WaylandSurface::hookSurfaceCommit,
-    .set_buffer_transform = WaylandSurface::surfaceSetBufferTransform,
-    .set_buffer_scale = WaylandSurface::surfaceSetBufferScale};
+    WaylandSurface::hookSurfaceDestroy,
+    WaylandSurface::hookSurfaceAttach,
+    WaylandSurface::surfaceDamage,
+    WaylandSurface::hookSurfaceFrame,
+    WaylandSurface::surfaceSetOpaqueRegion,
+    WaylandSurface::surfaceSetInputRegion,
+    WaylandSurface::hookSurfaceCommit,
+    WaylandSurface::surfaceSetBufferTransform,
+    WaylandSurface::surfaceSetBufferScale
+};
 
-#pragma GCC diagnostic pop
+// clang format on

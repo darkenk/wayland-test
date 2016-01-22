@@ -1,5 +1,5 @@
 project(wayland)
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.2.1)
 
 # set build type to debug as it is in development phase
 if(NOT CMAKE_BUILD_TYPE)
@@ -19,7 +19,7 @@ include(cmake/CMakeLists.txt)
 option(ENABLE_TESTS "enable tests" ON)
 
 # build external libraries
-add_subdirectory(external)
+add_subdirectory(external/dk_utils)
 
 if (ENABLE_TESTS)
     add_subdirectory(tests)

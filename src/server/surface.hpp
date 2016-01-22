@@ -1,8 +1,8 @@
 #ifndef SURFACE_HPP
 #define SURFACE_HPP
 
-#include "../utils/logger.hpp"
-#include "../utils/make_unique.hpp"
+#include "dk_utils/logger.hpp"
+#include "dk_utils/make_unique.hpp"
 #include "shellsurface.hpp"
 #include "wrapper/waylandsurface.hpp"
 

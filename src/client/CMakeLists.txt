@@ -3,8 +3,9 @@ project(shm_example)
 find_package(Wayland 1.7.0 COMPONENTS Client Egl REQUIRED)
 find_package(EGL REQUIRED)
 
-include_directories(SYSTEM
-    ${Wayland_INCLUDE_DIRS}
+include_directories(
+    SYSTEM ${Wayland_INCLUDE_DIRS}
+    ${DK_UTILS_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME} main.cpp)
@@ -28,7 +29,6 @@ target_link_libraries(${PROJECT_NAME}
     glapi
 )
 
-
 set(PROJECT_NAME qt_example)
 
 # Find includes in corresponding build directories
@@ -39,8 +39,8 @@ set(CMAKE_AUTOMOC ON)
 # Find the QtWidgets library
 find_package(Qt5Widgets REQUIRED)
 
-include_directories(SYSTEM
-    ${Qt5Widgets_INCLUDE_DIRS}
+include_directories(
+    SYSTEM ${Qt5Widgets_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME} main_qt.cpp)

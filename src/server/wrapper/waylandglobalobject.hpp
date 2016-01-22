@@ -1,7 +1,7 @@
 #ifndef WAYLANDGLOBALOBJECT_HPP
 #define WAYLANDGLOBALOBJECT_HPP
 
-#include "../../utils/make_unique.hpp"
+#include "dk_utils/make_unique.hpp"
 #include <memory>
 #include <stdexcept>
 #include <wayland-server.h>

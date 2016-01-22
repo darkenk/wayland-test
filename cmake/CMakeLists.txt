@@ -42,7 +42,6 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
         -Woverloaded-virtual \
         -Wredundant-decls \
         -Wshadow \
-        -Wsign-conversion \
         -Wsign-promo \
         -Wstrict-null-sentinel \
         -Wstrict-overflow=5 \
@@ -50,7 +49,6 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
         -Wundef \
         -Wunsafe-loop-optimizations \
         -Wvector-operation-performance \
-        -Wzero-as-null-pointer-constant \
         -Wno-sign-conversion \
         -Wno-format-extra-args"
     )

@@ -1,7 +1,7 @@
 #ifndef COMPOSITOR_HPP
 #define COMPOSITOR_HPP
 
-#include "../utils/make_unique.hpp"
+#include "dk_utils/make_unique.hpp"
 #include "backend/x11backend.hpp"
 #include "surface.hpp"
 #include "wrapper/waylandcompositor.hpp"

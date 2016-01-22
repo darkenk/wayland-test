@@ -1,7 +1,7 @@
 #ifndef GLCOMPOSITOR_HPP
 #define GLCOMPOSITOR_HPP
 
-#include "../utils/exceptions.hpp"
+#include "dk_utils/exceptions.hpp"
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include <cstdio>
@@ -9,6 +9,7 @@
 class GLCompositor
 {
 public:
+    using GLException = Exception<GLCompositor>;
     GLCompositor(EGLNativeDisplayType dpy, EGLNativeWindowType window) {
         EGLint major, minor, count, n;
         EGLConfig *configs;
@@ -28,13 +29,13 @@ public:
 
         mDisplay = eglGetDisplay(dpy);
         if (mDisplay == EGL_NO_DISPLAY) {
-            throw Exception("Can't create egl display");
+            throw GLException("Can't create egl display");
         } else {
             fprintf(stderr, "Created egl display\n");
         }
 
         if (eglInitialize(mDisplay, &major, &minor) != EGL_TRUE) {
-            throw Exception("Can't initialise egl display");
+            throw GLException("Can't initialise egl display");
         }
         printf("EGL major: %d, minor %d\n", major, minor);
 

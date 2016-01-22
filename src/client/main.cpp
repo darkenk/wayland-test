@@ -1,6 +1,6 @@
-#include "../utils/exceptions.hpp"
-#include "../utils/logger.hpp"
-#include "../utils/make_unique.hpp"
+#include "dk_utils/exceptions.hpp"
+#include "dk_utils/logger.hpp"
+#include "dk_utils/make_unique.hpp"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +14,7 @@ using namespace std;
 class WaylandBuffer
 {
 public:
+    using WLException = Exception<WaylandBuffer>;
     WaylandBuffer(wl_shm *shm, uint32_t width, uint32_t height) {
         mBufferListener.release = hookBufferRelease;
         mBuffer = createShmBuffer(shm, width, height);
@@ -52,7 +53,7 @@ private:
             mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
         if (mData == MAP_FAILED) {
             close(fd);
-            throw Exception("Cannot create shm buffer");
+            throw WLException("Cannot create shm buffer");
         }
         wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
         wl_buffer *buff =
@@ -73,11 +74,11 @@ private:
         if (fd >= 0) {
             unlink(tmpname);
         } else {
-            throw Exception("Cannot create anonymous file");
+            throw WLException("Cannot create anonymous file");
         }
         if (posix_fallocate(fd, 0, size) != 0) {
             close(fd);
-            throw Exception("Cannot allocate anonymous file");
+            throw WLException("Cannot allocate anonymous file");
         }
         return fd;
     }
@@ -139,13 +140,14 @@ private:
 class WaylandClient
 {
 public:
+    using WLException = Exception<WaylandClient>;
     WaylandClient()
         : mDisplay(nullptr), mCompositor(nullptr), mSharedMemory(nullptr), mSurface(nullptr) {
         mRegistryListener.global = WaylandClient::registryHandler;
         mRegistryListener.global_remove = WaylandClient::registryRemover;
         mDisplay = wl_display_connect(nullptr);
         if (not mDisplay) {
-            throw Exception("Error opening display");
+            throw WLException("Error opening display");
         }
 
         wl_registry *registry = wl_display_get_registry(mDisplay);
@@ -155,7 +157,7 @@ public:
         wl_display_roundtrip(mDisplay);  // wait synchronously for event
 
         if (not(mCompositor && mSharedMemory)) {
-            throw Exception("cannot find wl_compositor or wl_shm");
+            throw WLException("cannot find wl_compositor or wl_shm");
         }
     }
 

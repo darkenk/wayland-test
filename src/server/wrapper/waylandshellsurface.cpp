@@ -1,20 +1,17 @@
 #include "waylandshellsurface.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc99-extensions"
-
+// clang format off
 struct wl_shell_surface_interface WaylandShellSurface::sInterface = {
-    .pong = hookPong,
-    .move = hookMove,
-    .resize = hookResize,
-    .set_toplevel = hookSetToplevel,
-    .set_transient = hookSetTransient,
-    .set_fullscreen = hookSetFullscreen,
-    .set_popup = hookSetPopup,
-    .set_maximized = hookSetMaximized,
-    .set_title = hookSetTitle,
-    .set_class = hookSetClass
-
+    hookPong,
+    hookMove,
+    hookResize,
+    hookSetToplevel,
+    hookSetTransient,
+    hookSetFullscreen,
+    hookSetPopup,
+    hookSetMaximized,
+    hookSetTitle,
+    hookSetClass
 };
+// clang format on
 
-#pragma GCC diagnostic pop
