@@ -1,14 +1,14 @@
 project(wayland_server_test)
 aux_source_directory(. SRC)
 aux_source_directory(wrapper SRC_WRAPPER)
+add_library(wrapper STATIC ${SRC_WRAPPER})
+
 aux_source_directory(backend SRC_BACKEND)
 
-set(SRC "${SRC};${SRC_WRAPPER};${SRC_BACKEND}")
+set(SRC "${SRC};${SRC_BACKEND}")
 
 find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
 find_package(X11 REQUIRED)
-
-message(warning ${DK_UTILS_INCLUDE_DIR})
 
 include_directories(
     SYSTEM ${Wayland_INCLUDE_DIRS}
@@ -27,4 +27,5 @@ target_link_libraries(${PROJECT_NAME}
     EGL
     GLESv2
     glapi
+    wrapper
 )

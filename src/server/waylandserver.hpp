@@ -1,21 +1,21 @@
 #ifndef WAYLANDSERVER_HPP
 #define WAYLANDSERVER_HPP
 
-#include "dk_utils/make_unique.hpp"
-#include "backend/x11backend.hpp"
-#include "compositor.hpp"
-#include "seat.hpp"
-#include "shell.hpp"
-#include "wrapper/waylandoutput.hpp"
 #include <exception>
 #include <memory>
 #include <utility>
 #include <wayland-server.h>
+#include "backend/idisplaybackend.hpp"
+#include "compositor.hpp"
+#include "dk_utils/make_unique.hpp"
+#include "seat.hpp"
+#include "shell.hpp"
+#include "wrapper/waylandoutput.hpp"
 
 class WaylandServer
 {
 public:
-    WaylandServer(std::unique_ptr<X11Backend> backend) {
+    WaylandServer(std::unique_ptr<IDisplayBackend> backend) {
         mDisplay = wl_display_create();
         if (not mDisplay) {
             throw std::exception();
@@ -31,7 +31,7 @@ public:
         mOutput = f.create<WaylandOutput>();
         mSeat = f.create<Seat>();
         wl_display_init_shm(mDisplay);
-        mBackend->setPointerListener(std::static_pointer_cast<PointerListener>(mSeat));
+        // mBackend->setPointerListener(std::static_pointer_cast<PointerListener>(mSeat));
     }
 
     ~WaylandServer() {
@@ -47,7 +47,7 @@ public:
 
 private:
     wl_display* mDisplay;
-    std::shared_ptr<X11Backend> mBackend;
+    std::shared_ptr<IDisplayBackend> mBackend;
     std::unique_ptr<Compositor> mCompositor;
     std::unique_ptr<Shell> mShell;
     std::unique_ptr<WaylandOutput> mOutput;

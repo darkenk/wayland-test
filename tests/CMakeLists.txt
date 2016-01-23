@@ -1,28 +1,16 @@
-if (NOT GTEST_FOUND)
-    find_package(GTest REQUIRED)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../external/dk_utils/cmake/ToolsGtest.txt)
 
-if (NOT GMOCK_FOUND)
-    find_package(GMock REQUIRED)
-endif()
-
-find_package(Threads REQUIRED)
-
-include_directories(${CMAKE_SOURCE_DIR}/src/
-    SYSTEM ${GTEST_INCLUDE_DIRS}
-    SYSTEM ${GMOCK_INCLUDE_DIRS}
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
+    -Wno-cast-qual"
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-global-constructors")
+find_package(Wayland 1.7.0 COMPONENTS Server Client REQUIRED)
 
-function(add_gtest name sources)
-    add_executable(${name} ${sources})
-    target_link_libraries(${name}
-        ${GMOCK_MAIN_LIBRARY}
-        ${GMOCK_LIBRARY}
-        ${CMAKE_THREAD_LIBS_INIT}
-    )
-    add_test(AllTests ${name})
-endfunction()
+set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/../src/")
+set(INC "${Wayland_INCLUDE_DIRS};${SRC}")
+set(LINK "${Wayland_LIBRARIES};wrapper")
+set(SRC_LIST
 
-add_gtest(test1 test1.cpp)
+)
+
+add_gtest(test1 "test1.cpp;nullbackend.cpp;${SRC}/server/backend/idisplaybackend.cpp" "${INC}" "${LINK}")

@@ -1,25 +1,26 @@
 #ifndef X11BACKEND_HPP
 #define X11BACKEND_HPP
 
-#include "dk_utils/exceptions.hpp"
-#include "dk_utils/logger.hpp"
-#include "../seat.hpp"
-#include "wayland-server.h"
 #include <EGL/egl.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib-xcb.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include "../seat.hpp"
+#include "dk_utils/exceptions.hpp"
+#include "dk_utils/logger.hpp"
+#include "idisplaybackend.hpp"
+#include "wayland-server.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 
-class X11Backend
+class X11Backend : public IDisplayBackend
 {
 public:
     using X11Exception = Exception<X11Backend>;
     X11Backend(uint32_t width, uint32_t height)
-        : mWidth(width), mHeight(height), mWlDisplay(nullptr) {}
+        : IDisplayBackend(width, height), mWlDisplay(nullptr) {}
 
     ~X11Backend() {
         XDestroyImage(mImage);
@@ -36,7 +37,7 @@ public:
             X11Exception(__FUNCTION__);
         }
         mRoot = DefaultRootWindow(mDisplay);
-        mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, mWidth, mHeight, 0, 0, 0);
+        mWindow = XCreateSimpleWindow(mDisplay, mRoot, 0, 0, getWidth(), getHeight(), 0, 0, 0);
         XSetWindowAttributes swa;
         swa.event_mask = PointerMotionMask | ButtonPressMask | ButtonReleaseMask;
         XChangeWindowAttributes(mDisplay, mWindow, CWEventMask, &swa);
@@ -56,26 +57,18 @@ public:
         wl_event_source_check(mXcbSource);
     }
 
-    uint32_t getWidth() {
-        return mWidth;
-    }
-
-    uint32_t getHeight() {
-        return mHeight;
-    }
-
     void setSize(uint32_t width, uint32_t height) {
-        if (mWidth == width && mHeight == height) {
+        if (getWidth() == width && getHeight() == height) {
             return;
         }
         LOGVP("This doesn't work, need true implementation here!");
-        mWidth = width;
-        mHeight = height;
+//        mWidth = width;
+//        mHeight = height;
     }
 
     void drawBuffer(uint8_t* buffer) {
         mImage->data = reinterpret_cast<char*>(buffer);
-        XPutImage(mDisplay, mPixmap, mGraphicContext, mImage, 0, 0, 0, 0, mWidth, mHeight);
+        XPutImage(mDisplay, mPixmap, mGraphicContext, mImage, 0, 0, 0, 0, getWidth(), getHeight());
         XSetWindowBackgroundPixmap(mDisplay, mWindow, mPixmap);
         XClearWindow(mDisplay, mWindow);
         XFlush(mDisplay);
@@ -101,8 +94,6 @@ private:
     Window mRoot;
     Window mWindow;
     GC mGraphicContext;
-    uint32_t mWidth;
-    uint32_t mHeight;
     XImage* mImage;
     wl_event_source* mXcbSource;
     xcb_connection_t* mXcbConnection;
@@ -124,18 +115,18 @@ private:
     void initWindowFixedSize() {
         XSizeHints* sizeHints = XAllocSizeHints();
         sizeHints->flags = PMinSize | PMaxSize;
-        sizeHints->min_width = sizeHints->max_width = static_cast<int>(mWidth);
-        sizeHints->min_height = sizeHints->max_height = static_cast<int>(mHeight);
+        sizeHints->min_width = sizeHints->max_width = static_cast<int>(getWidth());
+        sizeHints->min_height = sizeHints->max_height = static_cast<int>(getHeight());
         XSetWMNormalHints(mDisplay, mWindow, sizeHints);
         XFree(sizeHints);
     }
 
     void initWindowPixmap() {
-        mPixmap = XCreatePixmap(mDisplay, mWindow, mWidth, mHeight, sDepth);
+        mPixmap = XCreatePixmap(mDisplay, mWindow, getWidth(), getHeight(), sDepth);
         XGCValues gcvalues;
         mGraphicContext = XCreateGC(mDisplay, mPixmap, 0, &gcvalues);
         mImage =
-            XCreateImage(mDisplay, nullptr, sDepth, ZPixmap, 0, nullptr, mWidth, mHeight, 32, 0);
+            XCreateImage(mDisplay, nullptr, sDepth, ZPixmap, 0, nullptr, getWidth(), getHeight(), 32, 0);
         if (not mImage) {
             throw X11Exception("Can't create XImage");
         }

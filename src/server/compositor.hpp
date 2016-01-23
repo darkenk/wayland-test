@@ -1,20 +1,20 @@
 #ifndef COMPOSITOR_HPP
 #define COMPOSITOR_HPP
 
-#include "dk_utils/make_unique.hpp"
-#include "backend/x11backend.hpp"
-#include "surface.hpp"
-#include "wrapper/waylandcompositor.hpp"
-#include "wrapper/waylandregion.hpp"
 #include <algorithm>
 #include <cstring>
 #include <memory>
 #include <vector>
+#include "backend/idisplaybackend.hpp"
+#include "dk_utils/make_unique.hpp"
+#include "surface.hpp"
+#include "wrapper/waylandcompositor.hpp"
+#include "wrapper/waylandregion.hpp"
 
 class Compositor : public WaylandCompositor, public DestroyListener<Surface>
 {
 public:
-    Compositor(wl_display* display, std::shared_ptr<X11Backend> output) {
+    Compositor(wl_display* display, std::shared_ptr<IDisplayBackend> output) {
         mOutput = output;
         mDisplayWidth = mOutput->getWidth();
         mDisplayHeight = mOutput->getHeight();
@@ -95,7 +95,7 @@ private:
     static const struct wl_compositor_interface sInterface;
     std::vector<std::unique_ptr<Surface>> mSurfacesList;
     wl_event_source* mRepaintTimer;
-    std::shared_ptr<X11Backend> mOutput;
+    std::shared_ptr<IDisplayBackend> mOutput;
     int32_t mDisplayWidth;
     int32_t mDisplayHeight;
     std::unique_ptr<uint8_t[]> mDisplayBuffer;
