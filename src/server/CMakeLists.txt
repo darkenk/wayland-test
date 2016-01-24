@@ -1,11 +1,14 @@
 project(wayland_server_test)
 aux_source_directory(. SRC)
+list(REMOVE_ITEM SRC ./main.cpp)
+add_library(dk_wayland_server STATIC ${SRC})
+
 aux_source_directory(wrapper SRC_WRAPPER)
 add_library(wrapper STATIC ${SRC_WRAPPER})
 
 aux_source_directory(backend SRC_BACKEND)
 
-set(SRC "${SRC};${SRC_BACKEND}")
+set(SRC "main.cpp;${SRC_BACKEND}")
 
 find_package(Wayland 1.7.0 COMPONENTS Server REQUIRED)
 find_package(X11 REQUIRED)
@@ -28,4 +31,5 @@ target_link_libraries(${PROJECT_NAME}
     GLESv2
     glapi
     wrapper
+    dk_wayland_server
 )

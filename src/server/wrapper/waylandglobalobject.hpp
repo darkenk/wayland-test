@@ -1,10 +1,10 @@
 #ifndef WAYLANDGLOBALOBJECT_HPP
 #define WAYLANDGLOBALOBJECT_HPP
 
-#include "dk_utils/make_unique.hpp"
 #include <memory>
 #include <stdexcept>
 #include <wayland-server.h>
+#include "dk_utils/make_unique.hpp"
 
 class FactoryWaylandGlobalObject
 {

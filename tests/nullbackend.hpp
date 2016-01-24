@@ -7,18 +7,23 @@
 class NullBackend : public IDisplayBackend
 {
 public:
-    NullBackend(unsigned int width, unsigned int height, int killTime = 16) :
-        IDisplayBackend (width, height), mDisplay(nullptr), mKillTimer(nullptr),
-    mKillTime(killTime){}
-    virtual ~NullBackend() {};
+    NullBackend(unsigned int width, unsigned int height, int killTime = 1)
+        : IDisplayBackend(width, height), mDisplay(nullptr), mKillTimer(nullptr),
+          mKillTime(killTime) {}
+
+    virtual ~NullBackend(){};
 
     virtual void init(wl_display* display) {
         mDisplay = display;
-        wl_event_loop* loop = wl_display_get_event_loop(display);
+    }
+
+    virtual void drawBuffer(uint8_t* /*buffer*/) {}
+
+    void finish() {
+        wl_event_loop* loop = wl_display_get_event_loop(mDisplay);
         mKillTimer = wl_event_loop_add_timer(loop, hookKillTime, this);
         wl_event_source_timer_update(mKillTimer, mKillTime);
     }
-    virtual void drawBuffer(uint8_t* /*buffer*/) {}
 
 private:
     wl_display* mDisplay;
@@ -36,4 +41,4 @@ private:
     }
 };
 
-#endif // NULLBACKEND_HPP
+#endif  // NULLBACKEND_HPP

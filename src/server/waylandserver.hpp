@@ -15,16 +15,18 @@
 class WaylandServer
 {
 public:
-    WaylandServer(std::unique_ptr<IDisplayBackend> backend) {
+    WaylandServer(std::unique_ptr<IDisplayBackend> backend, const std::string& socketName = "") {
         mDisplay = wl_display_create();
         if (not mDisplay) {
             throw std::exception();
         }
         mBackend = std::move(backend);
         mBackend->init(mDisplay);
-        const char* socketName = wl_display_add_socket_auto(mDisplay);
-        LOGVP("Socket Name %s", socketName);
-
+        if (socketName.empty()) {
+            wl_display_add_socket_auto(mDisplay);
+        } else {
+            wl_display_add_socket(mDisplay, socketName.c_str());
+        }
         FactoryWaylandGlobalObject f(mDisplay);
         mCompositor = f.create<Compositor>(mDisplay, mBackend);
         mShell = f.create<Shell>();

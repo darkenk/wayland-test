@@ -8,11 +8,20 @@ include_directories(
     ${DK_UTILS_INCLUDE_DIRS}
 )
 
+set(SRC
+    waylandbuffer.cpp
+    waylandclient.cpp
+    waylandsurface.cpp
+)
+
+add_library(dk_wayland_client STATIC ${SRC})
+
 add_executable(${PROJECT_NAME} main.cpp)
 
 target_link_libraries(${PROJECT_NAME}
-    ${Wayland_LIBRARIES}
     dk_utils
+    dk_wayland_client
+    ${Wayland_LIBRARIES}
 )
 
 set(PROJECT_NAME opengl_example)
