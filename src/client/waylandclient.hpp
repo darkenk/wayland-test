@@ -21,25 +21,27 @@ public:
     void run();
 
 protected:
-    wl_display *getDisplay();
+    wl_display* getDisplay();
+    wl_compositor* getCompositor();
+    wl_shm* getSharedMemory();
 
 private:
-    wl_display *mDisplay;
-    wl_compositor *mCompositor;
-    wl_shm *mSharedMemory;
-    wl_shell *mShell;
+    wl_display* mDisplay;
+    wl_compositor* mCompositor;
+    wl_shm* mSharedMemory;
+    wl_shell* mShell;
     wl_registry_listener mRegistryListener;
     std::unique_ptr<WaylandSurface> mSurface;
 
-    void registryHandler(wl_registry *registry, uint32_t id, const char *interface,
+    void registryHandler(wl_registry* registry, uint32_t id, const char* interface,
                          uint32_t /*version*/);
 
-    static void registryHandler(void *data, wl_registry *registry, uint32_t id,
-                                const char *interface, uint32_t version) {
-        reinterpret_cast<WaylandClient *>(data)->registryHandler(registry, id, interface, version);
+    static void registryHandler(void* data, wl_registry* registry, uint32_t id,
+                                const char* interface, uint32_t version) {
+        reinterpret_cast<WaylandClient*>(data)->registryHandler(registry, id, interface, version);
     }
 
-    static void registryRemover(void * /*data*/, struct wl_registry * /*registry*/, uint32_t id) {
+    static void registryRemover(void* /*data*/, struct wl_registry* /*registry*/, uint32_t id) {
         LOGVP("Got a registry losing event for %d\n", id);
     }
 };

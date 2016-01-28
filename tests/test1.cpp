@@ -22,7 +22,6 @@ public:
     }
 
     void SetUp() {
-        setenv("WAYLAND_DEBUG", "0", 1);
         auto b = make_unique<NullBackend>(320, 480);
         mBackend = b.get();
         mThreadServer = thread(
@@ -70,4 +69,11 @@ TEST_F(WaylandServerFixture, simple_connection) {
     shared_ptr<client::TestClient> wc;
     EXPECT_NO_THROW(wc = make_shared<client::TestClient>(getSocketName()));
     EXPECT_NE(nullptr, wc->getWlDisplay());
+}
+
+TEST_F(WaylandServerFixture, destroy_surface) {
+    client::TestClient wc(getSocketName());
+    wl_surface* wl = wc.createSurface();
+    wl_surface_destroy(wl);
+    wc.commitChangesToServer();
 }

@@ -9,9 +9,10 @@ class TestClient : public WaylandClient
 {
 public:
     TestClient(const std::string& socketName = ""): WaylandClient(socketName) {}
-    wl_display* getWlDisplay() {
-        return getDisplay();
-    }
+    virtual ~TestClient();
+    wl_display* getWlDisplay();
+    wl_surface* createSurface();
+    void commitChangesToServer();
 };
 }
 

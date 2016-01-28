@@ -45,6 +45,16 @@ wl_display *WaylandClient::getDisplay() {
     return mDisplay;
 }
 
+wl_shm* WaylandClient::getSharedMemory()
+{
+    return mSharedMemory;
+}
+
+wl_compositor* WaylandClient::getCompositor()
+{
+    return mCompositor;
+}
+
 void WaylandClient::registryHandler(wl_registry *registry, uint32_t id, const char *interface,
                                     uint32_t) {
     LOGVP("Got a registry event for %s id %d\n", interface, id);

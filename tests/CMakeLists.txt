@@ -15,6 +15,6 @@ set(SRC_LIST
 )
 add_library(test_lib STATIC ${SRC_LIST})
 target_include_directories(test_lib PUBLIC ${INC})
-set(LINK "${Wayland_LIBRARIES};wrapper;dk_wayland_client;test_lib")
+set(LINK "${Wayland_LIBRARIES};dk_wayland_server;dk_wayland_client;test_lib")
 
 add_gtest(test1 "test1.cpp" "${INC}" "${LINK}")

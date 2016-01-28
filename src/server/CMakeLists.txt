@@ -1,10 +1,12 @@
 project(wayland_server_test)
+aux_source_directory(wrapper SRC_WRAPPER)
+add_library(wrapper STATIC ${SRC_WRAPPER})
+
 aux_source_directory(. SRC)
 list(REMOVE_ITEM SRC ./main.cpp)
 add_library(dk_wayland_server STATIC ${SRC})
-
-aux_source_directory(wrapper SRC_WRAPPER)
-add_library(wrapper STATIC ${SRC_WRAPPER})
+target_link_libraries(dk_wayland_server
+    wrapper)
 
 aux_source_directory(backend SRC_BACKEND)
 
@@ -30,6 +32,5 @@ target_link_libraries(${PROJECT_NAME}
     EGL
     GLESv2
     glapi
-    wrapper
     dk_wayland_server
 )
