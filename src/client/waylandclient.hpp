@@ -30,6 +30,7 @@ private:
     wl_compositor* mCompositor;
     wl_shm* mSharedMemory;
     wl_shell* mShell;
+    wl_registry* mRegistry;
     wl_registry_listener mRegistryListener;
     std::unique_ptr<WaylandSurface> mSurface;
 

@@ -4,7 +4,8 @@ using namespace client;
 using namespace std;
 
 WaylandClient::WaylandClient(const string& socketName)
-    : mDisplay(nullptr), mCompositor(nullptr), mSharedMemory(nullptr), mSurface(nullptr) {
+    : mDisplay(nullptr), mCompositor(nullptr), mSharedMemory(nullptr), mRegistry(nullptr),
+      mSurface(nullptr) {
     mRegistryListener.global = WaylandClient::registryHandler;
     mRegistryListener.global_remove = WaylandClient::registryRemover;
     if (socketName.empty()) {
@@ -16,8 +17,8 @@ WaylandClient::WaylandClient(const string& socketName)
         throw WLException("Error opening display");
     }
 
-    wl_registry *registry = wl_display_get_registry(mDisplay);
-    wl_registry_add_listener(registry, &mRegistryListener, this);
+    mRegistry = wl_display_get_registry(mDisplay);
+    wl_registry_add_listener(mRegistry, &mRegistryListener, this);
 
     wl_display_dispatch(mDisplay);
     wl_display_roundtrip(mDisplay);  // wait synchronously for event
@@ -28,6 +29,10 @@ WaylandClient::WaylandClient(const string& socketName)
 }
 
 WaylandClient::~WaylandClient() {
+    wl_shell_destroy(mShell);
+    wl_shm_destroy(mSharedMemory);
+    wl_compositor_destroy(mCompositor);
+    wl_registry_destroy(mRegistry);
     wl_display_disconnect(mDisplay);
 }
 
